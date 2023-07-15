@@ -1,0 +1,16 @@
+{
+    "manifest_version": 2,
+    "name": "YouTube Watch Together",
+    "version": "0.1",
+    "description": "Toby pathetic attempt at a YouTube Watch Together extension",
+    "content_scripts": [
+        {
+            "matches": [
+                "https://*.youtube.com/watch*"
+            ],
+            "js": [
+                "main.js"
+            ]
+        }
+    ]
+}
