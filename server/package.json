@@ -2,10 +2,14 @@
   "name": "youtube-watch-together-server",
   "version": "0.0.1",
   "description": "",
-  "main": "main.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "main": "main.ts",
+  "scripts": {},
   "author": "tobycloud",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
 }
