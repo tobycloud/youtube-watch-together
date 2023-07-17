@@ -30,24 +30,10 @@ Bun.serve({
     message(ws, msg) {
       const message = JSON.parse(String(msg));
 
-      if (!["new", "load", "play", "pause", "seek"].includes(message.event))
-        return;
+      if (!["load", "play", "pause", "seek"].includes(message.event)) return;
 
-      switch (message.event) {
-        case "new":
-          ws.send(JSON.stringify({ event: "new", roomId: randomString(6) }));
-          break;
-        default:
-          ws.publish(
-            (ws.data as { roomId: string }).roomId,
-            JSON.stringify(message)
-          );
-          break;
-      }
-    },
-    close(ws) {
-      console.log("Client has disconnected");
+      ws.publish((ws.data as { roomId: string }).roomId, msg);
     },
   },
-  port: 3001,
+  port: 12372,
 });
