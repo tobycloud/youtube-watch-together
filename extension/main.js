@@ -6,11 +6,11 @@ function log(...args) {
   console.log("[YouTube Watch Together]", ...args);
 }
 
-const ws = new WebSocket(`ws:/localhost:12372/tobycm1`);
+var ws = new WebSocket(`ws:/localhost:12372/tobycm1`);
 
 ws.addEventListener("open", () => {
   log("Connected to server");
-  ws.send(JSON.stringify({ event: "connect" }));
+  sendEvent("connect", { needKey: false });
 });
 
 let just = {
@@ -71,7 +71,7 @@ if (window.location.pathname.startsWith("/watch")) {
       just.play = false;
       return;
     }
-    sendEvent("play", { time: player.currentTime });
+    sendEvent("play", { data: { time: player.currentTime } });
   });
 
   player.addEventListener("pause", () => {
@@ -89,7 +89,7 @@ if (window.location.pathname.startsWith("/watch")) {
         just.seek = false;
         return;
       }
-      sendEvent("seek", player.currentTime);
+      sendEvent("seek", { data: player.currentTime });
       lastPosition = player.currentTime;
     }
   });
@@ -107,38 +107,40 @@ if (window.location.pathname.startsWith("/watch")) {
     player.pause();
   }
 
+  const playing = !player.paused;
+
   player.play().catch((e) => {
     if (e instanceof DOMException) {
       // Autoplay was prevented.
       alert("Please allow autoplay for the best experience.");
     }
   });
-  player.pause();
+  if (!playing) player.pause();
 }
 
-async function sendEvent(event, data) {
+async function sendEvent(event, { data, needKey = true }) {
   if (ws.readyState != ws.OPEN) return;
-  log(
-    "Sending message",
-    event,
-    data || "",
-    await browser.storage.local.get("key")
-  );
-  ws.send(
-    JSON.stringify({ event, data, key: await browser.storage.local.get("key") })
-  );
+
+  const message = { event };
+  if (data) message.data = data;
+  if (needKey) {
+    message.key = await browser.storage.local.get("key");
+  }
+
+  log("Sending message", message);
+  ws.send(JSON.stringify(message));
 }
 
 let lastUrl = window.location.href;
 
-setInterval(() => {
+window.addEventListener("popstate", () => {
   if (window.location.href === lastUrl) return;
 
   const urlParams = new URLSearchParams(window.location.search);
   const vId = urlParams.get("v");
   if (!vId) return;
 
-  sendEvent("load", vId);
+  sendEvent("load", { data: vId });
 
   lastUrl = window.location.href;
-}, 50);
+});

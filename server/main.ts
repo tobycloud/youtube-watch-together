@@ -54,8 +54,9 @@ wss.addListener("connection", (ws) => {
   });
 
   ws.on("message", (message) => {
+    console.log("Received", String(message), "from room", ws.data.roomId);
     const parsedMessage = JSON.parse(String(message));
-
+    console.log("Parsed", parsedMessage);
     if (
       !["connect", "load", "play", "pause", "seek"].includes(
         parsedMessage.event
