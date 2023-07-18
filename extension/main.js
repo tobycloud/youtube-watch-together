@@ -85,7 +85,7 @@ if (window.location.pathname.startsWith("/watch")) {
   }
 
   function play(time) {
-    player.currentTime = time
+    player.currentTime = time;
     player.play();
   }
 
@@ -103,6 +103,7 @@ if (window.location.pathname.startsWith("/watch")) {
 }
 
 function sendEvent(event, data) {
+  if (ws.readyState != ws.OPEN) return;
   ws.send(JSON.stringify({ event, data }));
 }
 

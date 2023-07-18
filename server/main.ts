@@ -7,6 +7,13 @@ const server = app.listen(12372);
 const wss = new Server({ server });
 
 wss.on("connection", (ws) => {
+  wss.clients.forEach((client) => {
+    if (client !== ws && client.readyState === OPEN) {
+      client.send(JSON.stringify({
+        event: "connect", data: null
+      }));
+    }
+  });
   ws.on("message", (message) => {
     const parsedMessage = JSON.parse(String(message));
 
