@@ -30,6 +30,11 @@ app.use((request, response) => {
     return;
   }
 
+  if (request.headers.upgrade !== "websocket") {
+    response.status(400).send("Expected websocket");
+    return;
+  }
+
   wss.handleUpgrade(request, request.socket, Buffer.alloc(0), (ws) => {
     // @ts-ignore
     ws.data = { roomId };
