@@ -22,20 +22,24 @@ wss.on("connection", (ws) => {
   });
 });
 
-app.use((req, res) => {
-  const url = new URL(req.url);
+app.use((request, response) => {
+  const roomId = request.url.split("/")[1];
 
-  const roomId = url.pathname.split("/")[1];
+  if (!roomId) {
+    response.status(400).send("No room id");
+    return;
+  }
 
-  wss.handleUpgrade(req, req.socket, Buffer.alloc(0), (ws) => {
+  wss.handleUpgrade(request, request.socket, Buffer.alloc(0), (ws) => {
+    // @ts-ignore
     ws.data = { roomId };
     wss.emit("connection", ws);
   });
 
-  res.writeHead(101, {
+  response.writeHead(101, {
     "Content-Type": "text/plain",
     Connection: "Upgrade",
     Upgrade: "websocket",
   });
-  res.end();
+  response.end();
 });
