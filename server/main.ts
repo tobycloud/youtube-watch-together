@@ -38,9 +38,7 @@ wss.on("connection", (ws: { data: { roomId: string } } & WebSocket) => {
       ws.onclose = () => {
         hosts.delete(ws.data.roomId);
       };
-    }
-
-    if (hosts.get(ws.data.roomId) !== parsedMessage.key)
+    } else if (hosts.get(ws.data.roomId) !== parsedMessage.key)
       return ws.send(JSON.stringify({ event: "invalid_key" }));
     parsedMessage.key = undefined;
 
