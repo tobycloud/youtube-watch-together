@@ -98,6 +98,7 @@ if (window.location.pathname.startsWith("/watch")) {
       alert("Please allow autoplay for the best experience.");
     }
   });
+  player.pause();
 }
 
 function sendEvent(event, data) {
