@@ -35,6 +35,13 @@ const player = document.getElementsByClassName(
   "video-stream html5-main-video"
 )[0];
 
+player.play().catch((e) => {
+  if (e instanceof DOMException) {
+    // Autoplay was prevented.
+    alert("Please allow autoplay for the best experience.");
+  }
+});
+
 function sendEvent(event, data) {
   ws.send(JSON.stringify({ event, data }));
 }
@@ -65,7 +72,7 @@ player.addEventListener("timeupdate", () => {
 });
 
 function changeVideo(videoId) {
-  player.src = `https://www.youtube.com/watch?v=${videoId}`;
+  window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
 }
 
 function seekTo(seconds) {
