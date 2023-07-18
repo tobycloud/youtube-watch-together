@@ -6,54 +6,29 @@ function log(...args) {
   console.log("[YouTube Watch Together]", ...args);
 }
 
-var ws = new WebSocket(`ws:/localhost:12372/tobycm1`);
-
-ws.addEventListener("open", () => {
-  log("Connected to server");
-  sendEvent("connect", { needKey: false });
-});
-
 let just = {
   play: false,
   pause: false,
   seek: false,
 };
 
-ws.addEventListener("message", async (event) => {
-  let eventData = event.data;
+function sendJust() {
+  browser.runtime.sendMessage({ event: "just", just });
+}
 
-  if (event.data instanceof Blob) {
-    eventData = await event.data.text();
-  }
-  const { event: eventName, data } = JSON.parse(eventData);
-
-  log("Received message", eventName, data || "");
-
-  switch (eventName) {
-    case "host":
-      browser.storage.local.set({ key: "key", data });
-      break;
-    case "invalid_key":
-      browser.storage.local.remove("key");
-    case "load":
-      changeVideo(data);
-      break;
-    case "play":
-      just.play = true;
-      play(data.time);
-      break;
-    case "pause":
-      just.pause = true;
-      pause();
-      break;
-    case "seek":
-      just.seek = true;
-      seekTo(data);
-      break;
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.event === "just") {
+    just = message.just;
   }
 });
 
 let lastPosition = 0;
+
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.event === "changeVideo") {
+    changeVideo(message.videoId);
+  }
+});
 
 function changeVideo(videoId) {
   window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
@@ -69,17 +44,22 @@ if (window.location.pathname.startsWith("/watch")) {
   player.addEventListener("play", () => {
     if (just.play) {
       just.play = false;
+      sendJust();
       return;
     }
+
+    log("Playing video");
     sendEvent("play", { data: { time: player.currentTime } });
   });
 
   player.addEventListener("pause", () => {
     if (just.pause) {
       just.pause = false;
+      sendJust();
       return;
     }
     lastPosition = player.currentTime;
+    log("Pausing video");
     sendEvent("pause");
   });
 
@@ -87,8 +67,10 @@ if (window.location.pathname.startsWith("/watch")) {
     if (lastPosition !== player.currentTime && player.paused) {
       if (just.seek) {
         just.seek = false;
+        sendJust();
         return;
       }
+      log("Seeking video");
       sendEvent("seek", { data: player.currentTime });
       lastPosition = player.currentTime;
     }
@@ -109,18 +91,17 @@ if (window.location.pathname.startsWith("/watch")) {
 
   const playing = !player.paused;
 
-  player.play().catch((e) => {
-    if (e instanceof DOMException) {
+  player.play().catch((error) => {
+    if (error instanceof DOMException) {
       // Autoplay was prevented.
+      console.error(error);
       alert("Please allow autoplay for the best experience.");
     }
   });
   if (!playing) player.pause();
 }
 
-async function sendEvent(event, { data, needKey = true }) {
-  if (ws.readyState != ws.OPEN) return;
-
+async function sendEvent(event, { data = undefined, needKey = true }) {
   const message = { event };
   if (data) message.data = data;
   if (needKey) {
@@ -128,19 +109,23 @@ async function sendEvent(event, { data, needKey = true }) {
   }
 
   log("Sending message", message);
-  ws.send(JSON.stringify(message));
+  browser.runtime.sendMessage({
+    event: "sendEvent",
+    data: JSON.stringify(message),
+  });
 }
 
 let lastUrl = window.location.href;
 
-window.addEventListener("popstate", () => {
+setInterval(() => {
   if (window.location.href === lastUrl) return;
 
   const urlParams = new URLSearchParams(window.location.search);
   const vId = urlParams.get("v");
   if (!vId) return;
 
+  log("Changing video");
   sendEvent("load", { data: vId });
 
   lastUrl = window.location.href;
-});
+}, 100);

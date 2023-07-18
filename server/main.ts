@@ -35,18 +35,14 @@ app.get("/:roomId", (request, response) => {
   wss.handleUpgrade(request, request.socket, Buffer.alloc(0), (ws) => {
     ws.data = { roomId };
     wss.emit("connection", ws);
+    return;
   });
-
-  response.writeHead(101, {
-    "Content-Type": "text/plain",
-    Connection: "Upgrade",
-    Upgrade: "websocket",
-  });
-  response.end();
 });
 
 wss.addListener("connection", (ws) => {
-  ws.on("close", () => {
+  ws.on("error", console.error);
+
+  ws.on("close", (code, reason) => {
     const room = rooms.get(ws.data.roomId);
     if (room === undefined) return;
     room.splice(room.indexOf(ws), 1);
@@ -54,9 +50,10 @@ wss.addListener("connection", (ws) => {
   });
 
   ws.on("message", (message) => {
-    console.log("Received", String(message), "from room", ws.data.roomId);
     const parsedMessage = JSON.parse(String(message));
-    console.log("Parsed", parsedMessage);
+
+    console.log("Received", parsedMessage);
+
     if (
       !["connect", "load", "play", "pause", "seek"].includes(
         parsedMessage.event
