@@ -4,6 +4,12 @@ ws.addEventListener("open", () => {
   console.debug("Connected to server");
 });
 
+let just = {
+  play: false,
+  pause: false,
+  seek: false,
+};
+
 ws.addEventListener("message", async (event) => {
   let eventData = event.data;
 
@@ -20,12 +26,15 @@ ws.addEventListener("message", async (event) => {
       changeVideo(data);
       break;
     case "play":
+      just.play = true;
       play();
       break;
     case "pause":
+      just.pause = true;
       pause();
       break;
     case "seek":
+      just.seek = true;
       seekTo(data);
       break;
   }
@@ -43,15 +52,28 @@ if (window.location.pathname.startsWith("/watch")) {
   )[0];
 
   player.addEventListener("play", () => {
+    if (just.play) {
+      just.play = false;
+      return;
+    }
     sendEvent("play");
   });
 
   player.addEventListener("pause", () => {
+    if (just.pause) {
+      just.pause = false;
+      return;
+    }
     lastPosition = player.currentTime;
     sendEvent("pause");
   });
 
   player.addEventListener("timeupdate", () => {
+    if (just.seek) {
+      just.seek = false;
+      return;
+    }
+
     if (lastPosition !== player.currentTime && player.paused) {
       sendEvent("seek", player.currentTime);
       lastPosition = player.currentTime;
