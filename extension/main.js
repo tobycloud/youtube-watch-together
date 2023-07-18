@@ -33,6 +33,10 @@ ws.addEventListener("message", async (event) => {
 
 let lastPosition = 0;
 
+function changeVideo(videoId) {
+  window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
+}
+
 if (window.location.pathname.startsWith("/watch")) {
   const player = document.getElementsByClassName(
     "video-stream html5-main-video"
@@ -53,10 +57,6 @@ if (window.location.pathname.startsWith("/watch")) {
       lastPosition = player.currentTime;
     }
   });
-
-  function changeVideo(videoId) {
-    window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
-  }
 
   function seekTo(seconds) {
     player.currentTime = seconds;
@@ -82,10 +82,16 @@ function sendEvent(event, data) {
   ws.send(JSON.stringify({ event, data }));
 }
 
-window.addEventListener("locationchange", () => {
+let lastUrl = window.location.href;
+
+setInterval(() => {
+  if (window.location.href === lastUrl) return;
+
   const urlParams = new URLSearchParams(window.location.search);
   const vId = urlParams.get("v");
   if (!vId) return;
 
   sendEvent("load", vId);
-});
+
+  lastUrl = window.location.href;
+}, 100);
