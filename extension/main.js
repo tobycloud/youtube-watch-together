@@ -27,7 +27,7 @@ ws.addEventListener("message", async (event) => {
       break;
     case "play":
       just.play = true;
-      play();
+      play(data.time);
       break;
     case "pause":
       just.pause = true;
@@ -56,7 +56,7 @@ if (window.location.pathname.startsWith("/watch")) {
       just.play = false;
       return;
     }
-    sendEvent("play");
+    sendEvent("play", { time: player.currentTime });
   });
 
   player.addEventListener("pause", () => {
@@ -84,7 +84,8 @@ if (window.location.pathname.startsWith("/watch")) {
     player.currentTime = seconds;
   }
 
-  function play() {
+  function play(time) {
+    player.currentTime = time
     player.play();
   }
 
