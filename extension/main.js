@@ -46,9 +46,10 @@ function sendEvent(event, data) {
   ws.send(JSON.stringify({ event, data }));
 }
 
-player.addEventListener("loadstart", () => {
+window.addEventListener("locationchange", () => {
   const urlParams = new URLSearchParams(window.location.search);
   const vId = urlParams.get("v");
+  if (!vId) return;
 
   sendEvent("load", vId);
 });
