@@ -1,10 +1,19 @@
 import express from "express";
-import { OPEN, Server, WebSocket } from "ws";
+import { OPEN, WebSocket as OriginalWebSocket, Server } from "ws";
+
+class WebSocket extends OriginalWebSocket {
+  data = {
+    roomId: "",
+  };
+}
 
 const app = express();
-const server = app.listen(12372);
+app.listen(12372);
 
-const wss = new Server({ server });
+const wss = new Server<typeof WebSocket>({ noServer: true });
+
+const rooms = new Map<string, WebSocket[]>(); // roomId -> clients
+const hosts = new Map<string, string>(); // roomId -> key
 
 function randomString(length: number): string {
   const characters = "abcdefghijklmnopqrstuvwxyz";
@@ -15,54 +24,8 @@ function randomString(length: number): string {
   return result;
 }
 
-const hosts = new Map<string, string>(); // roomId -> key
-
-wss.on("connection", (ws: { data: { roomId: string } } & WebSocket) => {
-  ws.on("message", (message) => {
-    const parsedMessage = JSON.parse(String(message));
-
-    if (!["load", "play", "pause", "seek"].includes(parsedMessage.event)) {
-      return;
-    }
-
-    if (hosts.get(ws.data.roomId) === undefined) {
-      const key = randomString(32);
-      hosts.set(ws.data.roomId, key);
-      ws.send(
-        JSON.stringify({
-          event: "host",
-          data: key,
-        })
-      );
-
-      ws.onclose = () => {
-        hosts.delete(ws.data.roomId);
-      };
-    } else if (hosts.get(ws.data.roomId) !== parsedMessage.key)
-      return ws.send(JSON.stringify({ event: "invalid_key" }));
-    parsedMessage.key = undefined;
-
-    (wss.clients as Set<{ data: { roomId: string } } & WebSocket>).forEach(
-      (client) => {
-        if (client.data.roomId !== ws.data.roomId) {
-          return;
-        }
-
-        if (client !== ws && client.readyState === OPEN) {
-          client.send(JSON.stringify(parsedMessage));
-        }
-      }
-    );
-  });
-});
-
-app.use((request, response) => {
-  const roomId = request.url.split("/")[1];
-
-  if (!roomId) {
-    response.status(400).send("No room id");
-    return;
-  }
+app.get("/:roomId", (request, response) => {
+  const roomId = request.params.roomId;
 
   if (request.headers.upgrade !== "websocket") {
     response.status(400).send("Expected websocket");
@@ -70,7 +33,6 @@ app.use((request, response) => {
   }
 
   wss.handleUpgrade(request, request.socket, Buffer.alloc(0), (ws) => {
-    // @ts-ignore
     ws.data = { roomId };
     wss.emit("connection", ws);
   });
@@ -81,4 +43,55 @@ app.use((request, response) => {
     Upgrade: "websocket",
   });
   response.end();
+});
+
+wss.addListener("connection", (ws) => {
+  ws.on("close", () => {
+    const room = rooms.get(ws.data.roomId);
+    if (room === undefined) return;
+    room.splice(room.indexOf(ws), 1);
+    rooms.set(ws.data.roomId, room);
+  });
+
+  ws.on("message", (message) => {
+    const parsedMessage = JSON.parse(String(message));
+
+    if (
+      !["connect", "load", "play", "pause", "seek"].includes(
+        parsedMessage.event
+      )
+    )
+      return;
+
+    if (parsedMessage.event === "connect") {
+      let room = rooms.get(ws.data.roomId) || [];
+      room.push(ws);
+      rooms.set(ws.data.roomId, room);
+
+      if (hosts.get(ws.data.roomId) === undefined) {
+        const key = randomString(32);
+        hosts.set(ws.data.roomId, key);
+        ws.send(
+          JSON.stringify({
+            event: "host",
+            data: key,
+          })
+        );
+
+        ws.on("close", () => hosts.delete(ws.data.roomId));
+      }
+
+      return;
+    }
+
+    if (hosts.get(ws.data.roomId) !== parsedMessage.key)
+      return ws.send(JSON.stringify({ event: "invalid_key" }));
+    parsedMessage.key = undefined;
+
+    rooms.get(ws.data.roomId)!.forEach((client) => {
+      if (client !== ws && client.readyState === OPEN) {
+        client.send(JSON.stringify(parsedMessage));
+      }
+    });
+  });
 });

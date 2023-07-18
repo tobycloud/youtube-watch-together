@@ -1,7 +1,16 @@
-const ws = new WebSocket(`wss://ytwt.tobycm.systems/tobycm`);
+if (typeof browser === "undefined") {
+  var browser = chrome;
+}
+
+function log(...args) {
+  console.log("[YouTube Watch Together]", ...args);
+}
+
+const ws = new WebSocket(`ws:/localhost:12372/tobycm1`);
 
 ws.addEventListener("open", () => {
-  console.debug("Connected to server");
+  log("Connected to server");
+  ws.send(JSON.stringify({ event: "connect" }));
 });
 
 let just = {
@@ -16,10 +25,9 @@ ws.addEventListener("message", async (event) => {
   if (event.data instanceof Blob) {
     eventData = await event.data.text();
   }
-  console.debug("Received message", String(eventData));
   const { event: eventName, data } = JSON.parse(eventData);
 
-  console.debug("Received message", eventName, data);
+  log("Received message", eventName, data || "");
 
   switch (eventName) {
     case "host":
@@ -51,7 +59,7 @@ function changeVideo(videoId) {
   window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
 }
 
-console.debug("Loaded extension");
+log("Loaded extension");
 
 if (window.location.pathname.startsWith("/watch")) {
   const player = document.getElementsByClassName(
@@ -110,7 +118,15 @@ if (window.location.pathname.startsWith("/watch")) {
 
 async function sendEvent(event, data) {
   if (ws.readyState != ws.OPEN) return;
-  ws.send(JSON.stringify({ event, data, key: await storage.local.get("key") }));
+  log(
+    "Sending message",
+    event,
+    data || "",
+    await browser.storage.local.get("key")
+  );
+  ws.send(
+    JSON.stringify({ event, data, key: await browser.storage.local.get("key") })
+  );
 }
 
 let lastUrl = window.location.href;
