@@ -22,6 +22,11 @@ ws.addEventListener("message", async (event) => {
   console.debug("Received message", eventName, data);
 
   switch (eventName) {
+    case "host":
+      browser.storage.local.set({ key: "key", data });
+      break;
+    case "invalid_key":
+      browser.storage.local.remove("key");
     case "load":
       changeVideo(data);
       break;
@@ -46,6 +51,8 @@ function changeVideo(videoId) {
   window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
 }
 
+console.debug("Loaded extension");
+
 if (window.location.pathname.startsWith("/watch")) {
   const player = document.getElementsByClassName(
     "video-stream html5-main-video"
@@ -69,12 +76,11 @@ if (window.location.pathname.startsWith("/watch")) {
   });
 
   player.addEventListener("timeupdate", () => {
-    if (just.seek) {
-      just.seek = false;
-      return;
-    }
-
     if (lastPosition !== player.currentTime && player.paused) {
+      if (just.seek) {
+        just.seek = false;
+        return;
+      }
       sendEvent("seek", player.currentTime);
       lastPosition = player.currentTime;
     }
@@ -102,9 +108,9 @@ if (window.location.pathname.startsWith("/watch")) {
   player.pause();
 }
 
-function sendEvent(event, data) {
+async function sendEvent(event, data) {
   if (ws.readyState != ws.OPEN) return;
-  ws.send(JSON.stringify({ event, data }));
+  ws.send(JSON.stringify({ event, data, key: await storage.local.get("key") }));
 }
 
 let lastUrl = window.location.href;
@@ -119,4 +125,4 @@ setInterval(() => {
   sendEvent("load", vId);
 
   lastUrl = window.location.href;
-}, 100);
+}, 50);
