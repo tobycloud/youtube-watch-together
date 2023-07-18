@@ -13,7 +13,9 @@ Bun.serve({
     const url = new URL(req.url);
 
     if (url.pathname === "/new") {
-      return new Response(randomString(6));
+      return new Response(randomString(6), {
+        headers: { "Access-Control-Allow-Origin": "*" },
+      });
     }
 
     const roomId = url.pathname.split("/")[1];
