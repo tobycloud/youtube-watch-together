@@ -31,16 +31,52 @@ ws.addEventListener("message", async (event) => {
   }
 });
 
-const player = document.getElementsByClassName(
-  "video-stream html5-main-video"
-)[0];
+let lastPosition = 0;
 
-player.play().catch((e) => {
-  if (e instanceof DOMException) {
-    // Autoplay was prevented.
-    alert("Please allow autoplay for the best experience.");
+if (window.location.pathname.startsWith("/watch")) {
+  const player = document.getElementsByClassName(
+    "video-stream html5-main-video"
+  )[0];
+
+  player.addEventListener("play", () => {
+    sendEvent("play");
+  });
+
+  player.addEventListener("pause", () => {
+    lastPosition = player.currentTime;
+    sendEvent("pause");
+  });
+
+  player.addEventListener("timeupdate", () => {
+    if (lastPosition !== player.currentTime && player.paused) {
+      sendEvent("seek", player.currentTime);
+      lastPosition = player.currentTime;
+    }
+  });
+
+  function changeVideo(videoId) {
+    window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
   }
-});
+
+  function seekTo(seconds) {
+    player.currentTime = seconds;
+  }
+
+  function play() {
+    player.play();
+  }
+
+  function pause() {
+    player.pause();
+  }
+
+  player.play().catch((e) => {
+    if (e instanceof DOMException) {
+      // Autoplay was prevented.
+      alert("Please allow autoplay for the best experience.");
+    }
+  });
+}
 
 function sendEvent(event, data) {
   ws.send(JSON.stringify({ event, data }));
@@ -53,37 +89,3 @@ window.addEventListener("locationchange", () => {
 
   sendEvent("load", vId);
 });
-
-let lastPosition = 0;
-
-player.addEventListener("play", () => {
-  sendEvent("play");
-});
-
-player.addEventListener("pause", () => {
-  lastPosition = player.currentTime;
-  sendEvent("pause");
-});
-
-player.addEventListener("timeupdate", () => {
-  if (lastPosition !== player.currentTime && player.paused) {
-    sendEvent("seek", player.currentTime);
-    lastPosition = player.currentTime;
-  }
-});
-
-function changeVideo(videoId) {
-  window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
-}
-
-function seekTo(seconds) {
-  player.currentTime = seconds;
-}
-
-function play() {
-  player.play();
-}
-
-function pause() {
-  player.pause();
-}
