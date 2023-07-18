@@ -61,7 +61,7 @@ ws.addEventListener("message", async (event) => {
 
   switch (eventName) {
     case "host":
-      browser.storage.local.set({ key: "key", data });
+      browser.storage.local.set({ key: data });
       break;
     case "invalid_key":
       browser.storage.local.remove("key");
