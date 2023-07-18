@@ -1,26 +1,41 @@
-Bun.serve({
-  fetch(req, server) {
-    const url = new URL(req.url);
+import express from "express";
+import { OPEN, Server } from "ws";
 
-    const roomId = url.pathname.split("/")[1];
+const app = express();
+const server = app.listen(12372);
 
-    if (!server.upgrade(req, { data: { roomId } })) {
-      return new Response(null, { status: 404 });
+const wss = new Server({ server });
+
+wss.on("connection", (ws) => {
+  ws.on("message", (message) => {
+    const parsedMessage = JSON.parse(String(message));
+
+    if (!["load", "play", "pause", "seek"].includes(parsedMessage.event)) {
+      return;
     }
 
-    return new Response(null, { status: 101 });
-  },
-  websocket: {
-    open(ws) {
-      ws.subscribe((ws.data as { roomId: string }).roomId);
-    },
-    message(ws, msg) {
-      const message = JSON.parse(String(msg));
+    wss.clients.forEach((client) => {
+      if (client !== ws && client.readyState === OPEN) {
+        client.send(message);
+      }
+    });
+  });
+});
 
-      if (!["load", "play", "pause", "seek"].includes(message.event)) return;
+app.use((req, res) => {
+  const url = new URL(req.url);
 
-      ws.publish((ws.data as { roomId: string }).roomId, msg);
-    },
-  },
-  port: 12372,
+  const roomId = url.pathname.split("/")[1];
+
+  wss.handleUpgrade(req, req.socket, Buffer.alloc(0), (ws) => {
+    ws.data = { roomId };
+    wss.emit("connection", ws);
+  });
+
+  res.writeHead(101, {
+    "Content-Type": "text/plain",
+    Connection: "Upgrade",
+    Upgrade: "websocket",
+  });
+  res.end();
 });

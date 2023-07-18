@@ -2,14 +2,17 @@
   "name": "youtube-watch-together-server",
   "version": "0.0.1",
   "description": "",
+  "module": "es6",
   "main": "main.ts",
-  "scripts": {},
   "author": "tobycloud",
   "license": "MIT",
-  "devDependencies": {
-    "bun-types": "latest"
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.13.0"
   },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/ws": "^8.5.5",
+    "typescript": "^5.1.6"
   }
 }

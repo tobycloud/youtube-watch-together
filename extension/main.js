@@ -1,17 +1,6 @@
-const player = document.getElementsByClassName(
-  "video-stream html5-main-video"
-)[0];
-
-const response = await fetch("http://ytwt.tobycm.systems/new");
-const roomId = await response.text();
-
-const ws = new WebSocket(`wss://ytwt.tobycm.systems/${roomId}`);
-
-function sendEvent(event, data) {
-  ws.send(JSON.stringify({ event, data }));
-}
-
+const ws = new WebSocket(`wss://ytwt.tobycm.systems/tobycm`);
 ws.addEventListener("message", (event) => {
+  console.debug("Received message", event.data);
   const { event: eventName, data } = JSON.parse(event.data);
 
   switch (eventName) {
@@ -29,6 +18,14 @@ ws.addEventListener("message", (event) => {
       break;
   }
 });
+
+const player = document.getElementsByClassName(
+  "video-stream html5-main-video"
+)[0];
+
+function sendEvent(event, data) {
+  ws.send(JSON.stringify({ event, data }));
+}
 
 player.addEventListener("loadstart", () => {
   const urlParams = new URLSearchParams(window.location.search);
