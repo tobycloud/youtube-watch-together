@@ -105,7 +105,7 @@ async function sendEvent(event, { data = undefined, needKey = true }) {
   const message = { event };
   if (data) message.data = data;
   if (needKey) {
-    message.key = await browser.storage.local.get("key").key;
+    message.key = (await browser.storage.local.get("key")).key;
   }
 
   log("Sending message", message);
