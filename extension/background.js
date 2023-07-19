@@ -6,8 +6,11 @@ function log(...args) {
   console.log("[YouTube Watch Together]", ...args);
 }
 
+let kingTabId = "";
+
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.event === "sendEvent") {
+    kingTabId = sender.tab.id;
     const result = message.data;
     sendEvent(result);
   }
@@ -37,7 +40,7 @@ let just = {
 
 function sendJust() {
   browser.tabs.query({ active: true }, function (tabs) {
-    browser.tabs.sendMessage(tabs[0].id, { event: "just", just });
+    browser.tabs.sendMessage(kingTabId, { event: "just", just });
   });
 }
 
@@ -61,7 +64,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 function sendToTab(message) {
   browser.tabs.query({ active: true }, function (tabs) {
-    browser.tabs.sendMessage(tabs[0].id, message);
+    browser.tabs.sendMessage(kingTabId, message);
   });
 }
 
