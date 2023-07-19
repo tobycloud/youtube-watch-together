@@ -14,6 +14,7 @@ let just = {
 
 function sendJust() {
   browser.runtime.sendMessage({ event: "just", just });
+  log("just", just);
 }
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -37,9 +38,80 @@ function changeVideo(videoId) {
 log("Loaded extension");
 
 if (window.location.pathname.startsWith("/watch")) {
-  const player = document.getElementsByClassName(
+}
+
+async function sendEvent(event, { data = undefined, needKey = true }) {
+  const message = { event };
+  if (data) message.data = data;
+  if (needKey) {
+    message.key = (await browser.storage.local.get("key")).key;
+  }
+
+  log("Sending message", message);
+  browser.runtime.sendMessage({
+    event: "sendEvent",
+    data: JSON.stringify(message),
+  });
+}
+
+async function navigateAway(videoId) {
+  log("Navigating away");
+
+  browser.runtime.sendMessage({
+    event: "navigate",
+    videoId,
+    key: (await browser.storage.local.get("key")).key,
+  });
+}
+
+let lastUrl = window.location.href;
+
+setInterval(async () => {
+  if (window.location.href === lastUrl) return;
+  if (!window.location.pathname.startsWith("/watch")) return;
+
+  lastUrl = window.location.href;
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const vId = urlParams.get("v");
+
+  log("Changing video");
+  navigateAway(vId || "dQw4w9WgXcQ");
+
+  log("Watching video");
+
+  let player = document.getElementsByClassName(
     "video-stream html5-main-video"
   )[0];
+
+  const interval = setInterval(() => {
+    if (!player) {
+      player = document.getElementsByClassName(
+        "video-stream html5-main-video"
+      )[0];
+      return;
+    }
+    clearInterval(interval);
+  }, 250);
+
+  while (!player) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    switch (message.event) {
+      case "play":
+        player.currentTime = message.data;
+        player.play();
+        break;
+      case "pause":
+        player.pause();
+        break;
+      case "seek":
+        player.currentTime = message.data;
+        break;
+    }
+  });
 
   player.addEventListener("play", () => {
     if (just.play) {
@@ -60,7 +132,7 @@ if (window.location.pathname.startsWith("/watch")) {
     }
     lastPosition = player.currentTime;
     log("Pausing video");
-    sendEvent("pause");
+    sendEvent("pause", {});
   });
 
   player.addEventListener("timeupdate", () => {
@@ -75,57 +147,11 @@ if (window.location.pathname.startsWith("/watch")) {
       lastPosition = player.currentTime;
     }
   });
-
-  function seekTo(seconds) {
-    player.currentTime = seconds;
-  }
-
-  function play(time) {
-    player.currentTime = time;
-    player.play();
-  }
-
-  function pause() {
-    player.pause();
-  }
-
-  const playing = !player.paused;
-
-  player.play().catch((error) => {
-    if (error instanceof DOMException) {
-      // Autoplay was prevented.
-      console.error(error);
-      alert("Please allow autoplay for the best experience.");
-    }
-  });
-  if (!playing) player.pause();
-}
-
-async function sendEvent(event, { data = undefined, needKey = true }) {
-  const message = { event };
-  if (data) message.data = data;
-  if (needKey) {
-    message.key = (await browser.storage.local.get("key")).key;
-  }
-
-  log("Sending message", message);
-  browser.runtime.sendMessage({
-    event: "sendEvent",
-    data: JSON.stringify(message),
-  });
-}
-
-let lastUrl = window.location.href;
-
-setInterval(() => {
-  if (window.location.href === lastUrl) return;
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const vId = urlParams.get("v");
-  if (!vId) return;
-
-  log("Changing video");
-  sendEvent("load", { data: vId });
-
-  lastUrl = window.location.href;
 }, 100);
+
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.event === "changeVideo") {
+    const videoId = message.videoId;
+    if (videoId !== vId) changeVideo(videoId);
+  }
+});

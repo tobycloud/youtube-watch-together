@@ -20,7 +20,7 @@ function sendEvent(data) {
   ws.send(data);
 }
 
-var ws = new WebSocket(`ws://localhost:12372/tobycm1`);
+var ws = new WebSocket(`wss://ytwt.tobycm.systems/tobycm`);
 
 ws.addEventListener("error", console.error);
 
@@ -46,8 +46,28 @@ function sendJust() {
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.event === "just") {
     just = message.just;
+    log("just", just);
   }
 });
+
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.event === "navigate") {
+    const videoId = message.videoId;
+
+    log("Navigating to video", videoId);
+    sendEvent(
+      JSON.stringify({ event: "load", data: videoId, key: message.key })
+    );
+  }
+});
+
+function sendToTabs(message) {
+  browser.tabs.query({ active: true }, function (tabs) {
+    tabs.forEach((tab) => {
+      browser.tabs.sendMessage(tab.id, message);
+    });
+  });
+}
 
 ws.addEventListener("message", async (event) => {
   let eventData = event.data;
@@ -66,29 +86,25 @@ ws.addEventListener("message", async (event) => {
     case "invalid_key":
       browser.storage.local.remove("key");
     case "load":
-      browser.tabs.query({ active: true }, function (tabs) {
-        tabs.forEach((tab) => {
-          browser.tabs.sendMessage(tab.id, {
-            event: "changeVideo",
-            videoId: data,
-          });
-        });
+      sendToTabs({
+        event: "changeVideo",
+        videoId: data,
       });
       break;
     case "play":
       just.play = true;
       sendJust();
-      play(data.time);
+      sendToTabs({ event: "play", data });
       break;
     case "pause":
       just.pause = true;
       sendJust();
-      pause();
+      sendToTabs({ event: "pause" });
       break;
     case "seek":
       just.seek = true;
       sendJust();
-      seekTo(data);
+      sendToTabs({ event: "seek", data });
       break;
   }
 });
