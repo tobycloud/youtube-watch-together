@@ -37,9 +37,7 @@ let just = {
 
 function sendJust() {
   browser.tabs.query({ active: true }, function (tabs) {
-    tabs.forEach((tab) => {
-      browser.tabs.sendMessage(tab.id, { event: "just", just });
-    });
+    browser.tabs.sendMessage(tabs[0].id, { event: "just", just });
   });
 }
 
@@ -61,11 +59,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-function sendToTabs(message) {
+function sendToTab(message) {
   browser.tabs.query({ active: true }, function (tabs) {
-    tabs.forEach((tab) => {
-      browser.tabs.sendMessage(tab.id, message);
-    });
+    browser.tabs.sendMessage(tabs[0].id, message);
   });
 }
 
@@ -86,7 +82,7 @@ ws.addEventListener("message", async (event) => {
     case "invalid_key":
       browser.storage.local.remove("key");
     case "load":
-      sendToTabs({
+      sendToTab({
         event: "changeVideo",
         videoId: data,
       });
@@ -94,17 +90,17 @@ ws.addEventListener("message", async (event) => {
     case "play":
       just.play = true;
       sendJust();
-      sendToTabs({ event: "play", data });
+      sendToTab({ event: "play", data });
       break;
     case "pause":
       just.pause = true;
       sendJust();
-      sendToTabs({ event: "pause" });
+      sendToTab({ event: "pause" });
       break;
     case "seek":
       just.seek = true;
       sendJust();
-      sendToTabs({ event: "seek", data });
+      sendToTab({ event: "seek", data });
       break;
   }
 });
