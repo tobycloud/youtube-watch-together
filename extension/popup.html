@@ -6,26 +6,10 @@
     <title>Youtube Watch Together</title>
   </head>
   <body>
-    <script>
-      async function createRoom() {
-        const response = await fetch("http://ytwt.tobycm.systems/new");
-        const roomId = await response.text();
-
-        document.getElementById(
-          "roomIdPlaceholder"
-        ).innerText = `Room ID: ${roomId}`;
-      }
-    </script>
     <h1>Youtube Watch Together</h1>
-
-    <h2>Create Room</h2>
-    <button onclick="createRoom()">Create Room</button>
-    <p id="roomIdPlaceholder"></p>
 
     <h2>Join Room</h2>
     <input id="roomId" />
-    <button
-      onclick="joinRoom(document.querySelector('#roomId').value)"
-    ></button>
+    <button>Join Room</button>
   </body>
 </html>
