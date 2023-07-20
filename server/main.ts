@@ -55,11 +55,16 @@ wss.addListener("connection", (ws) => {
     console.log("Received", parsedMessage);
 
     if (
-      !["connect", "load", "play", "pause", "seek"].includes(
+      !["connect", "ping", "load", "play", "pause", "seek"].includes(
         parsedMessage.event
       )
     )
       return;
+
+    if (parsedMessage.event === "ping") {
+      ws.send(JSON.stringify({ event: "pong" }));
+      return;
+    }
 
     if (parsedMessage.event === "connect") {
       let room = rooms.get(ws.data.roomId) || [];

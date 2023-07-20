@@ -33,6 +33,11 @@ ws.addEventListener("error", console.error);
 ws.addEventListener("open", () => {
   log("Connected to server");
   sendEvent(JSON.stringify({ event: "connect" }));
+
+  // ping every 1 seconds
+  setInterval(() => {
+    sendEvent(JSON.stringify({ event: "ping" }));
+  }, 1000);
 });
 
 let just = {
@@ -82,6 +87,9 @@ ws.addEventListener("message", async (event) => {
   log("Received message", eventData);
 
   switch (eventName) {
+    case "pong":
+      log("Received pong");
+      break;
     case "host":
       browser.storage.local.set({ key: data });
       break;
