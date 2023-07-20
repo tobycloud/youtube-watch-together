@@ -46,3 +46,13 @@ input {
   padding: 5px;
   width: 40%;
 }
+
+#attribution {
+  margin-top: 20px;
+}
+
+a {
+  color: black;
+  text-decoration: none;
+  font-size: 0.7rem;
+}
