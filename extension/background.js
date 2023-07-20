@@ -34,10 +34,10 @@ ws.addEventListener("open", () => {
   log("Connected to server");
   sendEvent(JSON.stringify({ event: "connect" }));
 
-  // ping every 1 seconds
+  // ping every 5 seconds
   setInterval(() => {
     sendEvent(JSON.stringify({ event: "ping" }));
-  }, 1000);
+  }, 5 * 1000);
 });
 
 let just = {
