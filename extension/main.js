@@ -66,7 +66,7 @@ async function navigateAway(videoId) {
 
 let lastUrl = window.location.href;
 
-setInterval(async () => {
+async function checkUrl() {
   if (window.location.href === lastUrl) return;
   if (!window.location.pathname.startsWith("/watch")) return;
 
@@ -84,14 +84,14 @@ setInterval(async () => {
     "video-stream html5-main-video"
   )[0];
 
-  const interval = setInterval(() => {
+  const gettingPlayerInterval = setInterval(() => {
     if (!player) {
       player = document.getElementsByClassName(
         "video-stream html5-main-video"
       )[0];
       return;
     }
-    clearInterval(interval);
+    clearInterval(gettingPlayerInterval);
   }, 250);
 
   while (!player) {
@@ -147,7 +147,11 @@ setInterval(async () => {
       lastPosition = player.currentTime;
     }
   });
-}, 100);
+}
+
+window.addEventListener("popstate", checkUrl);
+
+setInterval(checkUrl, 100);
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.event === "changeVideo") {

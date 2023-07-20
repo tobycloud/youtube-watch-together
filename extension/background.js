@@ -23,7 +23,10 @@ function sendEvent(data) {
   ws.send(data);
 }
 
-var ws = new WebSocket(`wss://ytwt.tobycm.systems/tobycm`);
+const DEV_URL = "ws://localhost:12372/tobycm";
+const PROD_URL = "wss://ytwt.tobycm.systems/tobycm";
+
+var ws = new WebSocket(PROD_URL);
 
 ws.addEventListener("error", console.error);
 
@@ -76,7 +79,7 @@ ws.addEventListener("message", async (event) => {
   }
   const { event: eventName, data } = JSON.parse(eventData);
 
-  log("Received message", eventName, data || "");
+  log("Received message", eventData);
 
   switch (eventName) {
     case "host":
@@ -85,6 +88,15 @@ ws.addEventListener("message", async (event) => {
     case "invalid_key":
       browser.storage.local.remove("key");
     case "load":
+      browser.tabs.query({ active: true }, function (tabs) {
+        tabs.forEach((tab) => {
+          if (tab.id === kingTabId) return;
+          browser.tabs.sendMessage(tab.id, {
+            event: "changeVideo",
+            videoId: data,
+          });
+        });
+      });
       sendToTab({
         event: "changeVideo",
         videoId: data,
