@@ -87,6 +87,7 @@ ws.addEventListener("message", async (event) => {
       break;
     case "invalid_key":
       browser.storage.local.remove("key");
+      break;
     case "load":
       browser.tabs.query({ active: true }, function (tabs) {
         tabs.forEach((tab) => {
