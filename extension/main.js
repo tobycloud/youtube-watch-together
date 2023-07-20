@@ -37,9 +37,6 @@ function changeVideo(videoId) {
 
 log("Loaded extension");
 
-if (window.location.pathname.startsWith("/watch")) {
-}
-
 async function sendEvent(event, { data = undefined, needKey = true }) {
   const message = { event };
   if (data) message.data = data;

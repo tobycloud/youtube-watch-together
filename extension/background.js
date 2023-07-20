@@ -17,20 +17,26 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 function sendEvent(data) {
+  if (!ws) return;
   if (ws.readyState != ws.OPEN) return;
 
   log("Sending message", data);
   ws.send(data);
 }
 
-const DEV_URL = "ws://localhost:12372/tobycm";
-const PROD_URL = "wss://ytwt.tobycm.systems/tobycm";
+const DEV_URL = "ws://localhost:12372/";
+const PROD_URL = "wss://ytwt.tobycm.systems/";
 
-var ws = new WebSocket(PROD_URL);
+var ws;
 
-ws.addEventListener("error", console.error);
+function connect(roomId) {
+  ws = new WebSocket(PROD_URL + roomId);
+  ws.addEventListener("error", console.error);
+  ws.addEventListener("open", onWSOpen);
+  ws.addEventListener("message", onWSMessage);
+}
 
-ws.addEventListener("open", () => {
+function onWSOpen() {
   log("Connected to server");
   sendEvent(JSON.stringify({ event: "connect" }));
 
@@ -38,7 +44,7 @@ ws.addEventListener("open", () => {
   setInterval(() => {
     sendEvent(JSON.stringify({ event: "ping" }));
   }, 5 * 1000);
-});
+}
 
 let just = {
   play: false,
@@ -51,6 +57,16 @@ function sendJust() {
     browser.tabs.sendMessage(kingTabId, { event: "just", just });
   });
 }
+
+// browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+//   log("Received message", message);
+// });
+
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "joinRoom") {
+    connect(message.roomId);
+  }
+});
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.event === "just") {
@@ -72,11 +88,14 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 function sendToTab(message) {
   browser.tabs.query({ active: true }, function (tabs) {
-    browser.tabs.sendMessage(kingTabId, message);
+    tabs.forEach((tab) => {
+      if (tab.id === kingTabId) return;
+      browser.tabs.sendMessage(tab.id, message);
+    });
   });
 }
 
-ws.addEventListener("message", async (event) => {
+async function onWSMessage(event) {
   let eventData = event.data;
 
   if (event.data instanceof Blob) {
@@ -84,7 +103,7 @@ ws.addEventListener("message", async (event) => {
   }
   const { event: eventName, data } = JSON.parse(eventData);
 
-  log("Received message", eventData);
+  // log("Received message", eventData);
 
   switch (eventName) {
     case "host":
@@ -124,6 +143,6 @@ ws.addEventListener("message", async (event) => {
       sendToTab({ event: "seek", data });
       break;
   }
-});
+}
 
 log("Loaded background script");

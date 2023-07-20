@@ -3,12 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="script-src 'self' 'unsafe-inline';"
+    />
     <title>Youtube Watch Together</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <section id="title">
-      <img src="lib/logo.png" alt="logo" />
+      <img src="images/logo.png" alt="logo" />
       <div>
         <h1>Youtube Watch Together</h1>
         <h3>From DaCloud™ with 💖</h3>
@@ -18,7 +22,8 @@
       <div>
         <h2>Join Room</h2>
         <input id="roomId" /><br />
-        <button>Join Room</button>
+        <script src="script.js"></script>
+        <button id="joinRoomButton">Join Room</button>
       </div>
     </section>
     <section id="attribution">

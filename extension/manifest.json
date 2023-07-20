@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
   "name": "YouTube Watch Together",
-  "version": "0.1",
+  "version": "0.2.0",
   "description": "Toby's pathetic attempt at a YouTube Watch Together extension",
   "icons": {
-    "16": "lib/logo.png",
-    "32": "lib/logo.png",
-    "48": "lib/logo.png",
-    "128": "lib/logo.png"
+    "16": "images/logo.png",
+    "32": "images/logo.png",
+    "48": "images/logo.png",
+    "128": "images/logo.png"
   },
   "content_scripts": [
     {
