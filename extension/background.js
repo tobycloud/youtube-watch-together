@@ -87,9 +87,6 @@ ws.addEventListener("message", async (event) => {
   log("Received message", eventData);
 
   switch (eventName) {
-    case "pong":
-      log("Received pong");
-      break;
     case "host":
       browser.storage.local.set({ key: data });
       break;
