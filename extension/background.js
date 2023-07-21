@@ -1,4 +1,4 @@
-import { io } from "./socket.io/socket.io.esm.min.js";
+import { io } from "https://cdn.jsdelivr.net/npm/socket.io-client@4.7.1/+esm";
 
 if (typeof browser === "undefined") {
   var browser = chrome;
@@ -45,9 +45,7 @@ const URL = DEBUG ? DEV_URL : PROD_URL;
 let ws;
 
 function connect(roomId) {
-  ws = io(URL, {
-    forceNew: true,
-  });
+  ws = io(URL);
 
   ws.on("error", console.error);
   ws.on("connect", () => {
