@@ -51,14 +51,14 @@ async function checkUrl() {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     switch (message.event) {
       case "play":
-        player.currentTime = message.data;
+        player.currentTime = message.time;
         player.play();
         break;
       case "pause":
         player.pause();
         break;
       case "seek":
-        player.currentTime = message.data;
+        player.currentTime = message.time;
         break;
     }
   });

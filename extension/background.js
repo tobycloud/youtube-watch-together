@@ -37,10 +37,10 @@ browser.runtime.onMessage.addListener((message) => {
   }
 });
 
-const DEV_URL = "ws://localhost:12372/";
-const PROD_URL = "wss://ytwt.tobycm.systems/";
-
-const URL = false ? PROD_URL : DEV_URL;
+const DEV_URL = "ws://localhost:12372";
+const PROD_URL = "wss://ytwt.tobycm.systems";
+const DEBUG = true;
+const URL = DEBUG ? DEV_URL : PROD_URL;
 
 let ws;
 
@@ -50,20 +50,16 @@ function connect(roomId) {
   });
 
   ws.on("error", console.error);
+  ws.on("connect", () => {
+    log("Connected to server");
+    ws.emit("join", roomId);
+  });
   ws.on("invalid_key", () => browser.storage.local.remove("key"));
   ws.on("host", (key) => browser.storage.local.set({ key }));
-  ws.on("load", (videoId) =>
-    sendToTabs({
-      event: "changeVideo",
-      videoId,
-    })
-  );
-  ws.on("play", (time) => sendToTabs({ event: "play", data: time }));
+  ws.on("load", (videoId) => sendToTabs({ event: "changeVideo", videoId }));
+  ws.on("play", (time) => sendToTabs({ event: "play", time }));
   ws.on("pause", () => sendToTabs({ event: "pause" }));
-  ws.on("seek", (time) => sendToTabs({ event: "seek", data: time }));
-
-  log("Connected to server");
-  ws.emit("join", roomId);
+  ws.on("seek", (time) => sendToTabs({ event: "seek", time }));
 }
 
 log("Loaded background script");
