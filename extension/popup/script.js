@@ -1,7 +1,7 @@
 function joinRoom() {
   var roomId = document.getElementById("roomId").value;
   chrome.runtime.sendMessage({
-    type: "joinRoom",
+    event: "joinRoom",
     roomId,
   });
 }

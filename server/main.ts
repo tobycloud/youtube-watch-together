@@ -1,20 +1,3 @@
-import express from "express";
-import { OPEN, WebSocket as OriginalWebSocket, Server } from "ws";
-
-class WebSocket extends OriginalWebSocket {
-  data = {
-    roomId: "",
-  };
-}
-
-const app = express();
-app.listen(12372);
-
-const wss = new Server<typeof WebSocket>({ noServer: true });
-
-const rooms = new Map<string, WebSocket[]>(); // roomId -> clients
-const hosts = new Map<string, string>(); // roomId -> key
-
 function randomString(length: number): string {
   const characters = "abcdefghijklmnopqrstuvwxyz";
   let result = "";
@@ -24,77 +7,56 @@ function randomString(length: number): string {
   return result;
 }
 
-app.get("/:roomId", (request, response) => {
-  const roomId = request.params.roomId;
+import express from "express";
+import { Server } from "socket.io";
 
-  if (request.headers.upgrade !== "websocket") {
-    response.status(400).send("Expected websocket");
-    return;
+const app = express();
+const wss = new Server(
+  app.listen(12372, () => console.log("Started server")),
+  {
+    pingInterval: 5000,
+    pingTimeout: 10000,
   }
+);
 
-  wss.handleUpgrade(request, request.socket, Buffer.alloc(0), (ws) => {
-    ws.data = { roomId };
-    wss.emit("connection", ws);
-    return;
-  });
-});
+const keys = new Map<string, string>(); // roomId -> key
+const checkKey = (roomId: string, key: string) => keys.get(roomId) === key;
 
-wss.addListener("connection", (ws) => {
-  ws.on("error", console.error);
+wss.on("connection", (socket) => {
+  socket.on("error", console.error);
 
-  ws.on("close", (code, reason) => {
-    const room = rooms.get(ws.data.roomId);
-    if (room === undefined) return;
-    room.splice(room.indexOf(ws), 1);
-    rooms.set(ws.data.roomId, room);
-  });
+  socket.on("join", (roomId) => {
+    socket.data.roomId = roomId;
 
-  ws.on("message", (message) => {
-    const parsedMessage = JSON.parse(String(message));
+    if (keys.get(roomId) === undefined) {
+      const key = randomString(32);
+      keys.set(roomId, key);
+      socket.emit("host", key);
 
-    console.log("Received", parsedMessage);
-
-    if (
-      !["connect", "ping", "load", "play", "pause", "seek"].includes(
-        parsedMessage.event
-      )
-    )
-      return;
-
-    if (parsedMessage.event === "ping") {
-      ws.send(JSON.stringify({ event: "pong" }));
-      return;
+      socket.on("disconnect", () => keys.delete(socket.data.roomId));
     }
 
-    if (parsedMessage.event === "connect") {
-      let room = rooms.get(ws.data.roomId) || [];
-      room.push(ws);
-      rooms.set(ws.data.roomId, room);
+    socket.join(roomId);
+  });
 
-      if (hosts.get(ws.data.roomId) === undefined) {
-        const key = randomString(32);
-        hosts.set(ws.data.roomId, key);
-        ws.send(
-          JSON.stringify({
-            event: "host",
-            data: key,
-          })
-        );
+  socket.on("load", (videoId, key) => {
+    if (!checkKey(socket.data.roomId, key)) return;
+    console.log("load", videoId);
+    socket.to(socket.data.roomId).emit("load", videoId);
+  });
 
-        ws.on("close", () => hosts.delete(ws.data.roomId));
-      }
+  socket.on("play", (currentTimestamp, key) => {
+    if (!checkKey(socket.data.roomId, key)) return;
+    socket.to(socket.data.roomId).emit("play", currentTimestamp);
+  });
 
-      return;
-    }
+  socket.on("pause", (currentTimestamp, key) => {
+    if (!checkKey(socket.data.roomId, key)) return;
+    socket.to(socket.data.roomId).emit("pause", currentTimestamp);
+  });
 
-    if (hosts.get(ws.data.roomId) !== parsedMessage.key)
-      return ws.send(JSON.stringify({ event: "invalid_key" }));
-    parsedMessage.key = undefined;
-
-    rooms.get(ws.data.roomId)!.forEach((client) => {
-      if (client !== ws && client.readyState === OPEN) {
-        client.send(JSON.stringify(parsedMessage));
-      }
-    });
+  socket.on("seek", (currentTimestamp, key) => {
+    if (!checkKey(socket.data.roomId, key)) return;
+    socket.to(socket.data.roomId).emit("seek", currentTimestamp);
   });
 });

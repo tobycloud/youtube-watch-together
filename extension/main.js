@@ -6,23 +6,6 @@ function log(...args) {
   console.log("[YouTube Watch Together]", ...args);
 }
 
-let just = {
-  play: false,
-  pause: false,
-  seek: false,
-};
-
-function sendJust() {
-  browser.runtime.sendMessage({ event: "just", just });
-  log("just", just);
-}
-
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.event === "just") {
-    just = message.just;
-  }
-});
-
 let lastPosition = 0;
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -32,34 +15,14 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 function changeVideo(videoId) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const currentVideoId = urlParams.get("v");
+  if (currentVideoId === videoId) return;
+
   window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
 }
 
 log("Loaded extension");
-
-async function sendEvent(event, { data = undefined, needKey = true }) {
-  const message = { event };
-  if (data) message.data = data;
-  if (needKey) {
-    message.key = (await browser.storage.local.get("key")).key;
-  }
-
-  log("Sending message", message);
-  browser.runtime.sendMessage({
-    event: "sendEvent",
-    data: JSON.stringify(message),
-  });
-}
-
-async function navigateAway(videoId) {
-  log("Navigating away");
-
-  browser.runtime.sendMessage({
-    event: "navigate",
-    videoId,
-    key: (await browser.storage.local.get("key")).key,
-  });
-}
 
 let lastUrl = window.location.href;
 
@@ -70,30 +33,20 @@ async function checkUrl() {
   lastUrl = window.location.href;
 
   const urlParams = new URLSearchParams(window.location.search);
-  const vId = urlParams.get("v");
+  const videoId = urlParams.get("v");
+  if (!videoId) return;
 
-  log("Changing video");
-  navigateAway(vId || "dQw4w9WgXcQ");
+  browser.runtime.sendMessage({
+    event: "navigate",
+    videoId,
+    key: (await browser.storage.local.get("key")).key,
+  });
 
-  log("Watching video");
-
-  let player = document.getElementsByClassName(
+  const player = document.getElementsByClassName(
     "video-stream html5-main-video"
   )[0];
 
-  const gettingPlayerInterval = setInterval(() => {
-    if (!player) {
-      player = document.getElementsByClassName(
-        "video-stream html5-main-video"
-      )[0];
-      return;
-    }
-    clearInterval(gettingPlayerInterval);
-  }, 250);
-
-  while (!player) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
+  if (!player) return;
 
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     switch (message.event) {
@@ -110,49 +63,39 @@ async function checkUrl() {
     }
   });
 
-  player.addEventListener("play", () => {
-    if (just.play) {
-      just.play = false;
-      sendJust();
-      return;
-    }
-
-    log("Playing video");
-    sendEvent("play", { data: { time: player.currentTime } });
+  player.addEventListener("play", async () => {
+    browser.runtime.sendMessage({
+      event: "play",
+      time: player.currentTime,
+      key: (await browser.storage.local.get("key")).key,
+    });
   });
 
-  player.addEventListener("pause", () => {
-    if (just.pause) {
-      just.pause = false;
-      sendJust();
-      return;
-    }
+  player.addEventListener("pause", async () => {
     lastPosition = player.currentTime;
-    log("Pausing video");
-    sendEvent("pause", {});
+    browser.runtime.sendMessage({
+      event: "pause",
+      key: (await browser.storage.local.get("key")).key,
+    });
   });
 
-  player.addEventListener("timeupdate", () => {
+  player.addEventListener("timeupdate", async () => {
     if (lastPosition !== player.currentTime && player.paused) {
-      if (just.seek) {
-        just.seek = false;
-        sendJust();
-        return;
-      }
-      log("Seeking video");
-      sendEvent("seek", { data: player.currentTime });
+      browser.runtime.sendMessage({
+        event: "seek",
+        time: player.currentTime,
+        key: (await browser.storage.local.get("key")).key,
+      });
       lastPosition = player.currentTime;
     }
   });
 }
 
 window.addEventListener("popstate", checkUrl);
-
-setInterval(checkUrl, 100);
+setInterval(checkUrl, 250);
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.event === "changeVideo") {
-    const videoId = message.videoId;
-    if (videoId !== vId) changeVideo(videoId);
+    changeVideo(videoId);
   }
 });
