@@ -16,6 +16,9 @@ const wss = new Server(
   {
     pingInterval: 5000,
     pingTimeout: 10000,
+    cors: {
+      origin: "*",
+    },
   }
 );
 
