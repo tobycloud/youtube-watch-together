@@ -36,14 +36,11 @@ browser.runtime.onMessage.addListener((message) => {
 
 let lastVideoId = "";
 
-let lastMessage;
-
 browser.runtime.onMessage.addListener((message) => {
   if (!ws) return;
-  if (lastMessage !== message) {
-    log("Received message from extension:", message);
-    lastMessage = message;
-  }
+  if (lastVideoId === message.videoId) return;
+  log("Received message from extension:", message);
+
   switch (message.event) {
     case "navigate":
       if (lastVideoId === message.videoId) return;
