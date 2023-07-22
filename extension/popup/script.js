@@ -1,9 +1,11 @@
 function joinRoom() {
-  var roomId = document.getElementById("roomId").value;
+  let roomId = document.getElementById("roomId").value;
   chrome.runtime.sendMessage({
     event: "joinRoom",
     roomId,
   });
+
+  window.close();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
