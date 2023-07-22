@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Watch Together",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Toby's pathetic attempt at a YouTube Watch Together extension",
   "icons": {
     "16": "images/logo.png",
