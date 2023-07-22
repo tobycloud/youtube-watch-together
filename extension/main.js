@@ -8,10 +8,12 @@ function log(...args) {
 
 let lastPosition = 0;
 
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.event === "changeVideo") {
-    changeVideo(message.videoId);
-  }
+browser.runtime.onMessage.addListener((message) => {
+  log("Received message from service worker:", message);
+});
+
+browser.runtime.onMessage.addListener((message) => {
+  if (message.event === "changeVideo") changeVideo(message.videoId);
 });
 
 function changeVideo(videoId) {
