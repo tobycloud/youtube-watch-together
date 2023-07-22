@@ -45,7 +45,10 @@ const URL = DEBUG ? DEV_URL : PROD_URL;
 let ws;
 
 function connect(roomId) {
-  ws = io(URL);
+  ws = io(URL, {
+    forceNew: true,
+    transports: ["websocket"],
+  });
 
   ws.on("error", console.error);
   ws.on("connect", () => {
