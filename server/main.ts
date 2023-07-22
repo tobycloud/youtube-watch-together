@@ -44,7 +44,6 @@ wss.on("connection", (socket) => {
 
   socket.on("load", (videoId, key) => {
     if (!checkKey(socket.data.roomId, key)) return;
-    console.log("load", videoId);
     socket.to(socket.data.roomId).emit("load", videoId);
   });
 

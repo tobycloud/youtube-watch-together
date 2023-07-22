@@ -1,30 +1,40 @@
-import WebSocket from "ws";
+function randomString(length: number): string {
+  const characters = "abcdefghijklmnopqrstuvwxyz";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
 
-const roomId = "test";
+import { io } from "socket.io-client";
 
-const ws = new WebSocket(`ws://localhost:12372/${roomId}`);
-const ws2 = new WebSocket(`ws://localhost:12372/${roomId}`);
+const roomId = randomString(32);
+const testingVideoId = randomString(11);
 
-ws2.on("message", (data) => {
-  const message = JSON.parse(String(data));
+const ws = io("ws://localhost:12372/");
+const ws2 = io("ws://localhost:12372/");
 
-  if (message.event === "load" && message.videoId === "4Q_Zt4RhJTM") {
+ws.on("connect", () => {
+  ws.emit("join", roomId);
+});
+
+let hostKey: string;
+ws.on("host", (key) => {
+  hostKey = key;
+  ws.emit("load", testingVideoId, key);
+});
+
+ws2.on("connect", () => {
+  ws2.emit("join", roomId);
+});
+
+ws2.on("load", (videoId) => {
+  if (videoId === testingVideoId) {
     console.log("Success!");
-    ws.close();
-    ws2.close();
   } else {
     console.log("Failure!");
   }
-});
-
-ws.on("open", () => {
-  ws.send(JSON.stringify({ event: "load", videoId: "4Q_Zt4RhJTM" }));
-});
-
-ws.on("message", (data) => {
-  const message = JSON.parse(String(data));
-
-  if (message.event === "new") {
-    console.log(ws);
-  }
+  ws.close();
+  ws2.close();
 });

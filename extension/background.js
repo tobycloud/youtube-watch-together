@@ -4,6 +4,20 @@ if (typeof browser === "undefined") {
   var browser = chrome;
 }
 
+// keeping this service worker alive
+async function createOffscreen() {
+  await chrome.offscreen
+    .createDocument({
+      url: "offscreen.html",
+      reasons: ["BLOBS"],
+      justification: "keep service worker running",
+    })
+    .catch(() => {});
+}
+chrome.runtime.onStartup.addListener(createOffscreen);
+self.onmessage = (e) => {}; // keepAlive
+createOffscreen();
+
 function log(...args) {
   console.log("[YouTube Watch Together]", ...args);
 }
