@@ -87,7 +87,7 @@ async function checkUrl() {
 }
 
 window.addEventListener("popstate", checkUrl);
-setInterval(checkUrl, 100); // less buggier
+setInterval(checkUrl, 200);
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.event === "changeVideo") {
