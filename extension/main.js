@@ -45,7 +45,7 @@ async function checkUrl() {
 
   if (!player) return;
 
-  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  browser.runtime.onMessage.addListener((message) => {
     switch (message.event) {
       case "play":
         player.currentTime = message.time;

@@ -36,14 +36,19 @@ browser.runtime.onMessage.addListener((message) => {
 
 let lastVideoId = "";
 
+let lastMessage;
+
 browser.runtime.onMessage.addListener((message) => {
   if (!ws) return;
-  log("Received message from extension:", message);
+  if (lastMessage !== message) {
+    log("Received message from extension:", message);
+    lastMessage = message;
+  }
   switch (message.event) {
     case "navigate":
       if (lastVideoId === message.videoId) return;
       lastVideoId = message.videoId;
-      ws.emit("load", message.videoId, message.key);
+      ws.emit("load", message.videoId, message.startTime, message.key);
     case "play":
       ws.emit("play", message.time, message.key);
       break;
@@ -74,12 +79,30 @@ function connect(roomId) {
     log("Connected to server");
     ws.emit("join", roomId);
   });
-  ws.on("invalid_key", () => browser.storage.local.remove("key"));
-  ws.on("host", (key) => browser.storage.local.set({ key }));
-  ws.on("load", (videoId) => sendToTabs({ event: "changeVideo", videoId }));
-  ws.on("play", (time) => sendToTabs({ event: "play", time }));
-  ws.on("pause", () => sendToTabs({ event: "pause" }));
-  ws.on("seek", (time) => sendToTabs({ event: "seek", time }));
+  ws.on("invalid_key", () => {
+    log("Invalid key");
+    browser.storage.local.remove("key");
+  });
+  ws.on("host", (key) => {
+    log("Received host key:", key);
+    browser.storage.local.set({ key });
+  });
+  ws.on("load", (videoId) => {
+    log("Received load event:", videoId);
+    sendToTabs({ event: "changeVideo", videoId });
+  });
+  ws.on("play", (time) => {
+    log("Received play event:", time);
+    sendToTabs({ event: "play", time });
+  });
+  ws.on("pause", () => {
+    log("Received pause event");
+    sendToTabs({ event: "pause" });
+  });
+  ws.on("seek", (time) => {
+    log("Received seek event:", time);
+    sendToTabs({ event: "seek", time });
+  });
 }
 
 log("Loaded background script");
