@@ -24,17 +24,12 @@ function changeVideo(videoId) {
 
 log("Loaded extension");
 
-let lastUrl = window.location.href;
-
 async function checkUrl() {
-  if (lastUrl === window.location.href) return;
   if (!window.location.pathname.startsWith("/watch")) return;
 
   const urlParams = new URLSearchParams(window.location.search);
   const videoId = urlParams.get("v");
   if (!videoId) return;
-
-  lastUrl = window.location.href;
 
   browser.runtime.sendMessage({
     event: "navigate",
