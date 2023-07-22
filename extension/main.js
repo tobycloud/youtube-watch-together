@@ -24,13 +24,8 @@ function changeVideo(videoId) {
 
 log("Loaded extension");
 
-let lastUrl = window.location.href;
-
 async function checkUrl() {
-  if (window.location.href === lastUrl) return;
   if (!window.location.pathname.startsWith("/watch")) return;
-
-  lastUrl = window.location.href;
 
   const urlParams = new URLSearchParams(window.location.search);
   const videoId = urlParams.get("v");

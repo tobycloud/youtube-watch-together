@@ -34,10 +34,14 @@ browser.runtime.onMessage.addListener((message) => {
   }
 });
 
+let lastVideoId = "";
+
 browser.runtime.onMessage.addListener((message) => {
   if (!ws) return;
   switch (message.event) {
     case "navigate":
+      if (lastVideoId === message.videoId) return;
+      lastVideoId = message.videoId;
       ws.emit("load", message.videoId, message.key);
     case "play":
       ws.emit("play", message.time, message.key);
