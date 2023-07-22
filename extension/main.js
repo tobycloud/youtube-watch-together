@@ -16,14 +16,6 @@ browser.runtime.onMessage.addListener((message) => {
   if (message.event === "changeVideo") changeVideo(message.videoId);
 });
 
-function changeVideo(videoId) {
-  const urlParams = new URLSearchParams(window.location.search);
-  const currentVideoId = urlParams.get("v");
-  if (currentVideoId === videoId) return;
-
-  window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
-}
-
 log("Loaded extension");
 
 async function checkUrl() {
@@ -91,8 +83,6 @@ async function checkUrl() {
 window.addEventListener("popstate", checkUrl);
 setInterval(checkUrl, 200);
 
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.event === "changeVideo") {
-    changeVideo(videoId);
-  }
+browser.runtime.onMessage.addListener((message) => {
+  if (message.event === "changeVideo") changeVideo(message.videoId);
 });

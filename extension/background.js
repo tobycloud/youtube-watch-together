@@ -23,7 +23,7 @@ function log(...args) {
 }
 
 function sendToTabs(message) {
-  browser.tabs.query({ active: true }, (tabs) =>
+  browser.tabs.query({ url: "*://*.youtube.com/*" }, (tabs) =>
     tabs.forEach((tab) => browser.tabs.sendMessage(tab.id, message))
   );
 }
@@ -48,7 +48,7 @@ browser.runtime.onMessage.addListener((message) => {
     case "navigate":
       if (lastVideoId === message.videoId) return;
       lastVideoId = message.videoId;
-      ws.emit("load", message.videoId, message.startTime, message.key);
+      ws.emit("load", message.videoId, message.key);
     case "play":
       ws.emit("play", message.time, message.key);
       break;
