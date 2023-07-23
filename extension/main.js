@@ -6,8 +6,6 @@ function log(...args) {
   console.log("[YouTube Watch Together]", ...args);
 }
 
-let lastPosition = 0;
-
 browser.runtime.onMessage.addListener((message) => {
   log("Received message from service worker:", message);
 });
@@ -17,20 +15,23 @@ browser.runtime.onMessage.addListener((message) => {
     window.location.href = `https://www.youtube.com/watch?v=${message.videoId}`;
 });
 
+(async () => {
+  const key = (await browser.storage.local.get("key")).key;
+  browser.runtime.sendMessage({
+    event: "initKey",
+    key,
+  });
+})();
+
 log("Loaded extension");
 
-async function checkUrl() {
+function checkUrl() {
   if (!window.location.pathname.startsWith("/watch")) return;
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const videoId = urlParams.get("v");
+  const videoId = new URLSearchParams(window.location.search).get("v");
   if (!videoId) return;
 
-  browser.runtime.sendMessage({
-    event: "navigate",
-    videoId,
-    key: (await browser.storage.local.get("key")).key,
-  });
+  browser.runtime.sendMessage({ event: "navigate", videoId });
 
   const player = document.getElementsByClassName(
     "video-stream html5-main-video"
@@ -39,46 +40,18 @@ async function checkUrl() {
   if (!player) return;
 
   browser.runtime.onMessage.addListener((message) => {
-    switch (message.event) {
-      case "play":
-        player.currentTime = message.time;
-        player.play();
-        break;
-      case "pause":
-        player.pause();
-        break;
-      case "seek":
-        player.currentTime = message.time;
-        break;
-    }
+    if (message.time) player.currentTime = message.time;
+    if (message.event === "play") player.play();
+    if (message.event === "pause") player.pause();
   });
 
-  player.addEventListener("play", async () => {
-    browser.runtime.sendMessage({
-      event: "play",
-      time: player.currentTime,
-      key: (await browser.storage.local.get("key")).key,
-    });
-  });
+  player.addEventListener("play", () =>
+    browser.runtime.sendMessage({ event: "play", time: player.currentTime })
+  );
 
-  player.addEventListener("pause", async () => {
-    lastPosition = player.currentTime;
-    browser.runtime.sendMessage({
-      event: "pause",
-      key: (await browser.storage.local.get("key")).key,
-    });
-  });
-
-  player.addEventListener("timeupdate", async () => {
-    if (lastPosition !== player.currentTime && player.paused) {
-      browser.runtime.sendMessage({
-        event: "seek",
-        time: player.currentTime,
-        key: (await browser.storage.local.get("key")).key,
-      });
-      lastPosition = player.currentTime;
-    }
-  });
+  player.addEventListener("pause", () =>
+    browser.runtime.sendMessage({ event: "pause" })
+  );
 }
 
 window.addEventListener("popstate", checkUrl);

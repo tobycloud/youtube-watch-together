@@ -35,6 +35,7 @@ browser.runtime.onMessage.addListener((message) => {
 });
 
 let lastVideoId = "";
+let lastKey;
 
 browser.runtime.onMessage.addListener((message) => {
   if (!ws) return;
@@ -42,18 +43,18 @@ browser.runtime.onMessage.addListener((message) => {
   log("Received message from extension:", message);
 
   switch (message.event) {
+    case "initKey":
+      if (lastKey === message.key) return;
+      lastKey = message.key;
     case "navigate":
       if (lastVideoId === message.videoId) return;
       lastVideoId = message.videoId;
-      ws.emit("load", message.videoId, message.key);
+      ws.emit("load", message.videoId, lastKey);
     case "play":
-      ws.emit("play", message.time, message.key);
+      ws.emit("play", message.time, lastKey);
       break;
     case "pause":
-      ws.emit("pause", message.key);
-      break;
-    case "seek":
-      ws.emit("seek", message.time, message.key);
+      ws.emit("pause", lastKey);
       break;
   }
 });
@@ -79,26 +80,24 @@ function connect(roomId) {
   ws.on("invalid_key", () => {
     log("Invalid key");
     browser.storage.local.remove("key");
+    lastKey = undefined;
   });
   ws.on("host", (key) => {
     log("Received host key:", key);
     browser.storage.local.set({ key });
+    lastKey = key;
   });
   ws.on("load", (videoId) => {
-    log("Received load event:", videoId);
+    log("Loading video", videoId);
     sendToTabs({ event: "changeVideo", videoId });
   });
   ws.on("play", (time) => {
-    log("Received play event:", time);
+    log("Received play event and sync at", time);
     sendToTabs({ event: "play", time });
   });
   ws.on("pause", () => {
     log("Received pause event");
     sendToTabs({ event: "pause" });
-  });
-  ws.on("seek", (time) => {
-    log("Received seek event:", time);
-    sendToTabs({ event: "seek", time });
   });
 }
 
