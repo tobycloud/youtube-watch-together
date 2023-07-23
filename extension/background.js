@@ -9,7 +9,7 @@ function log(...args) {
 }
 
 function sendToTabs(message) {
-  browser.tabs.query({ active: true }, (tabs) =>
+  browser.tabs.query({ url: "*://*.youtube.com/*" }, (tabs) =>
     tabs.forEach((tab) => browser.tabs.sendMessage(tab.id, message))
   );
 }
@@ -21,22 +21,26 @@ browser.runtime.onMessage.addListener((message) => {
 });
 
 let lastVideoId = "";
+let lastKey;
 
 browser.runtime.onMessage.addListener((message) => {
   if (!ws) return;
+  if (lastVideoId === message.videoId) return;
+  log("Received message from extension:", message);
+
   switch (message.event) {
+    case "initKey":
+      if (lastKey === message.key) return;
+      lastKey = message.key;
     case "navigate":
       if (lastVideoId === message.videoId) return;
       lastVideoId = message.videoId;
-      ws.emit("load", message.videoId, message.key);
+      ws.emit("load", message.videoId, lastKey);
     case "play":
-      ws.emit("play", message.time, message.key);
+      ws.emit("play", message.time, lastKey);
       break;
     case "pause":
-      ws.emit("pause", message.key);
-      break;
-    case "seek":
-      ws.emit("seek", message.time, message.key);
+      ws.emit("pause", lastKey);
       break;
   }
 });
@@ -59,12 +63,28 @@ function connect(roomId) {
     log("Connected to server");
     ws.emit("join", roomId);
   });
-  ws.on("invalid_key", () => browser.storage.local.remove("key"));
-  ws.on("host", (key) => browser.storage.local.set({ key }));
-  ws.on("load", (videoId) => sendToTabs({ event: "changeVideo", videoId }));
-  ws.on("play", (time) => sendToTabs({ event: "play", time }));
-  ws.on("pause", () => sendToTabs({ event: "pause" }));
-  ws.on("seek", (time) => sendToTabs({ event: "seek", time }));
+  ws.on("invalid_key", () => {
+    log("Invalid key");
+    browser.storage.local.remove("key");
+    lastKey = undefined;
+  });
+  ws.on("host", (key) => {
+    log("Received host key:", key);
+    browser.storage.local.set({ key });
+    lastKey = key;
+  });
+  ws.on("load", (videoId) => {
+    log("Loading video", videoId);
+    sendToTabs({ event: "changeVideo", videoId });
+  });
+  ws.on("play", (time) => {
+    log("Received play event and sync at", time);
+    sendToTabs({ event: "play", time });
+  });
+  ws.on("pause", () => {
+    log("Received pause event");
+    sendToTabs({ event: "pause" });
+  });
 }
 
 log("Loaded background script");
