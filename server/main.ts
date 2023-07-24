@@ -38,7 +38,7 @@ wss.on("connection", (socket) => {
         lingeringSockets.delete(socket.data.roomId);
         if (keys.get(socket.data.roomId) === socket.handshake.auth.key)
           keys.delete(socket.data.roomId);
-      }, 10000)
+      }, 1000 * 60 * 5)
     )
   );
 

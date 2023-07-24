@@ -32,7 +32,7 @@ let lastKey = "";
 let isHost = false;
 
 browser.storage.local.get("key").then((data) => {
-  if (!data.key || data.lastUsed < Date.now() - 1000 * 60) {
+  if (!data.key || data.lastUsed < Date.now() - 1000 * 60 * 5) {
     const key = randomString(16);
     browser.storage.local.set({ key });
     lastKey = key;
