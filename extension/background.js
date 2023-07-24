@@ -70,7 +70,7 @@ function connect(roomId) {
     forceNew: true,
     transports: ["websocket"],
     auth: {
-      key,
+      key: lastKey,
     },
   });
 
@@ -78,6 +78,9 @@ function connect(roomId) {
   ws.on("connect", () => {
     log("Connected to server");
     ws.emit("join", roomId);
+  });
+  ws.on("reconnect", () => {
+    log("Reconnected to server");
   });
   ws.on("host", () => (isHost = true));
   ws.on("load", (videoId, startAt) => {
