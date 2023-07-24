@@ -25,6 +25,8 @@ browser.runtime.onMessage.addListener((message) => {
 
 log("Loaded extension");
 
+let player;
+
 function checkUrl() {
   if (!window.location.pathname.startsWith("/watch")) return;
 
@@ -33,26 +35,30 @@ function checkUrl() {
 
   browser.runtime.sendMessage({ event: "navigate", videoId });
 
-  const player = document.getElementsByClassName(
-    "video-stream html5-main-video"
-  )[0];
+  if (!player) {
+    player = document.getElementsByClassName(
+      "video-stream html5-main-video"
+    )[0];
+    if (!player) return;
 
-  if (!player) return;
+    log("Found player");
 
-  browser.runtime.onMessage.addListener((message) => {
-    if (message.time) player.currentTime = message.time;
-    if (message.event === "play") player.play();
-    if (message.event === "pause") player.pause();
-  });
+    player.addEventListener("play", () =>
+      browser.runtime.sendMessage({ event: "play", time: player.currentTime })
+    );
 
-  player.addEventListener("play", () =>
-    browser.runtime.sendMessage({ event: "play", time: player.currentTime })
-  );
-
-  player.addEventListener("pause", () =>
-    browser.runtime.sendMessage({ event: "pause" })
-  );
+    player.addEventListener("pause", () =>
+      browser.runtime.sendMessage({ event: "pause" })
+    );
+  }
 }
+
+browser.runtime.onMessage.addListener((message) => {
+  if (!player) return;
+  if (message.time) player.currentTime = message.time;
+  if (message.event === "play") player.play();
+  if (message.event === "pause") player.pause();
+});
 
 window.addEventListener("popstate", checkUrl);
 setInterval(checkUrl, 200);
