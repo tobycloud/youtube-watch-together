@@ -49,7 +49,7 @@ function checkUrl() {
 
 browser.runtime.onMessage.addListener((message) => {
   if (!player) return;
-  if (message.time) player.currentTime = message.time;
+  if (message.time !== undefined) player.currentTime = message.time;
   if (message.event === "play") player.play();
   if (message.event === "pause") player.pause();
 });
