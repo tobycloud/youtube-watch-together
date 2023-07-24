@@ -1,0 +1,29 @@
+.toast {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  position: absolute;
+  top: 60px;
+  right: 10px;
+  z-index: 999999;
+  background-color: white;
+  color: black;
+  font-size: 30px;
+  padding: 10px;
+  border-radius: 5px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.toast h5 {
+  margin: 10px 0 10px;
+}
+
+.toast p {
+  font-size: 20px;
+}
+
+#dismiss {
+  font-size: 15px;
+}

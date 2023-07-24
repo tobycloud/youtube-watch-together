@@ -7,7 +7,36 @@ function log(...args) {
 }
 
 browser.runtime.onMessage.addListener((message) => {
-  log("Received message from service worker:", message);
+  log("Received message from service worker: ", message);
+});
+
+browser.runtime.onMessage.addListener((message) => {
+  if (message.event === "notification") {
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    const heading = document.createElement("p");
+    heading.textContent = "Joined Room:";
+    const roomID = document.createElement("h5");
+    roomID.textContent = message.roomId;
+    const dismiss = document.createElement("p");
+    dismiss.id = "dismiss";
+    dismiss.textContent = "Click to dismiss";
+
+    toast.appendChild(heading);
+    toast.appendChild(roomID);
+    toast.appendChild(dismiss);
+
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = "1";
+    }, 100);
+    toast.addEventListener("click", () => {
+      toast.style.opacity = "0";
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 300);
+    });
+  }
 });
 
 browser.runtime.onMessage.addListener((message) => {
