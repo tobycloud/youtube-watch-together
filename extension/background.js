@@ -51,7 +51,7 @@ browser.runtime.onMessage.addListener((message) => {
       lastVideoId = message.videoId;
       ws.emit("load", message.videoId, lastKey);
     case "play":
-      ws.emit("play", message.time, Date.now() * 1000, lastKey);
+      ws.emit("play", message.time, Date.now() / 1000, lastKey);
       break;
     case "pause":
       ws.emit("pause", lastKey);
@@ -86,7 +86,7 @@ function connect(roomId) {
     sendToTabs({ event: "changeVideo", videoId });
   });
   ws.on("play", (time, currentTime) => {
-    time = time + (Date.now() * 1000 - currentTime) / 1000;
+    time = time + (Date.now() / 1000 - currentTime);
     log("Received play event and sync at", time);
     sendToTabs({ event: "play", time });
   });
