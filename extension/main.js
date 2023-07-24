@@ -15,14 +15,6 @@ browser.runtime.onMessage.addListener((message) => {
     window.location.href = `https://www.youtube.com/watch?v=${message.videoId}`;
 });
 
-(async () => {
-  const key = (await browser.storage.local.get("key")).key;
-  browser.runtime.sendMessage({
-    event: "initKey",
-    key,
-  });
-})();
-
 log("Loaded extension");
 
 let player;
