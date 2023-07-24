@@ -29,13 +29,17 @@ function sendToTabs(message) {
 }
 
 browser.runtime.onMessage.addListener((message) => {
-  if (message.event === "joinRoom") connect(message.roomId);
+  if (message.event === "joinRoom") {
+    connect(message.roomId);
+  }
 });
 
 let lastVideoId = "";
 let lastKey;
 
-browser.storage.local.get("key").then((value) => (lastKey = value.key));
+(async () => {
+  lastKey = (await browser.storage.local.get("key")).key;
+})();
 
 browser.runtime.onMessage.addListener((message) => {
   if (!ws) return;
@@ -51,7 +55,7 @@ browser.runtime.onMessage.addListener((message) => {
       lastVideoId = message.videoId;
       ws.emit("load", message.videoId, lastKey);
     case "play":
-      ws.emit("play", message.time, Date.now() / 1000, lastKey);
+      ws.emit("play", message.time, lastKey);
       break;
     case "pause":
       ws.emit("pause", lastKey);
@@ -85,8 +89,7 @@ function connect(roomId) {
     log("Loading video", videoId);
     sendToTabs({ event: "changeVideo", videoId });
   });
-  ws.on("play", (time, currentTime) => {
-    time = time + (Date.now() / 1000 - currentTime);
+  ws.on("play", (time) => {
     log("Received play event and sync at", time);
     sendToTabs({ event: "play", time });
   });
