@@ -56,7 +56,7 @@ browser.runtime.onMessage.addListener((message) => {
       ws.emit(
         "load",
         message.videoId,
-        Math.round(Date.now() / 1000) + 5,
+        Math.round(Date.now()) + 5 * 1000,
         lastKey
       );
     case "play":
@@ -95,7 +95,7 @@ function connect(roomId) {
     sendToTabs({ event: "changeVideo", videoId });
     setTimeout(
       () => sendToTabs({ event: "play", time: 0 }),
-      (startAt - Math.round(Date.now() / 1000)) * 1000
+      startAt - Math.round(Date.now())
     );
   });
   ws.on("play", (time) => {
