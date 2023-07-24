@@ -47,9 +47,9 @@ wss.on("connection", (socket) => {
     socket.to(socket.data.roomId).emit("load", videoId);
   });
 
-  socket.on("play", (currentTimestamp, key) => {
+  socket.on("play", (currentTimestamp, currentTime, key) => {
     if (!checkKey(socket.data.roomId, key)) return;
-    socket.to(socket.data.roomId).emit("play", currentTimestamp);
+    socket.to(socket.data.roomId).emit("play", currentTimestamp, currentTime);
   });
 
   socket.on("pause", (key) => {
