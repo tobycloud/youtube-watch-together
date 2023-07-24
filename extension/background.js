@@ -23,6 +23,10 @@ browser.runtime.onMessage.addListener((message) => {
 let lastVideoId = "";
 let lastKey;
 
+(async () => {
+  lastKey = (await browser.storage.local.get("key")).key;
+})();
+
 browser.runtime.onMessage.addListener((message) => {
   if (!ws) return;
   if (lastVideoId === message.videoId) return;
@@ -63,14 +67,8 @@ function connect(roomId) {
     log("Connected to server");
     ws.emit("join", roomId);
   });
-  ws.on("invalid_key", () => {
-    log("Invalid key");
-    browser.storage.local.remove("key");
-    lastKey = undefined;
-  });
   ws.on("host", (key) => {
     log("Received host key:", key);
-    browser.storage.local.set({ key });
     lastKey = key;
   });
   ws.on("load", (videoId) => {

@@ -52,13 +52,8 @@ wss.on("connection", (socket) => {
     socket.to(socket.data.roomId).emit("play", currentTimestamp);
   });
 
-  socket.on("pause", (currentTimestamp, key) => {
+  socket.on("pause", (key) => {
     if (!checkKey(socket.data.roomId, key)) return;
-    socket.to(socket.data.roomId).emit("pause", currentTimestamp);
-  });
-
-  socket.on("seek", (currentTimestamp, key) => {
-    if (!checkKey(socket.data.roomId, key)) return;
-    socket.to(socket.data.roomId).emit("seek", currentTimestamp);
+    socket.to(socket.data.roomId).emit("pause");
   });
 });
