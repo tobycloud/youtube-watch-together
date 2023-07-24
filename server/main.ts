@@ -8,7 +8,7 @@ function randomString(length: number): string {
 }
 
 import express from "express";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 
 const app = express();
 const wss = new Server(
@@ -22,38 +22,58 @@ const wss = new Server(
   }
 );
 
+const lingeringSockets = new Map<string, NodeJS.Timeout>(); // roomId -> timeout
+
 const keys = new Map<string, string>(); // roomId -> key
-const checkKey = (roomId: string, key: string) => keys.get(roomId) === key;
+const checkKey = (socket: Socket) =>
+  keys.get(socket.data.roomId) === socket.handshake.auth.key;
 
 wss.on("connection", (socket) => {
   socket.on("error", console.error);
 
+  socket.on("disconnect", () =>
+    lingeringSockets.set(
+      socket.handshake.auth.key,
+      setTimeout(() => {
+        lingeringSockets.delete(socket.data.roomId);
+        if (keys.get(socket.data.roomId) === socket.handshake.auth.key)
+          keys.delete(socket.data.roomId);
+      }, 1000 * 60 * 5)
+    )
+  );
+
   socket.on("join", (roomId) => {
+    const key = socket.handshake.auth.key;
     socket.data.roomId = roomId;
 
-    if (keys.get(roomId) === undefined) {
-      const key = randomString(32);
-      keys.set(roomId, key);
-      socket.emit("host", key);
+    if (lingeringSockets.get(key) !== undefined) {
+      clearTimeout(lingeringSockets.get(key)!);
+      lingeringSockets.delete(key);
+      return socket.emit("reconnect");
+    }
 
-      socket.on("disconnect", () => keys.delete(socket.data.roomId));
+    if (keys.get(roomId) === undefined) {
+      keys.set(roomId, key);
+      socket.emit("host");
+
+      socket.on("disconnect", () => {});
     }
 
     socket.join(roomId);
   });
 
-  socket.on("load", (videoId, key) => {
-    if (!checkKey(socket.data.roomId, key)) return;
-    socket.to(socket.data.roomId).emit("load", videoId);
+  socket.on("load", (videoId, startAt) => {
+    if (!checkKey(socket)) return;
+    socket.to(socket.data.roomId).emit("load", videoId, startAt);
   });
 
-  socket.on("play", (currentTimestamp, key) => {
-    if (!checkKey(socket.data.roomId, key)) return;
+  socket.on("play", (currentTimestamp) => {
+    if (!checkKey(socket)) return;
     socket.to(socket.data.roomId).emit("play", currentTimestamp);
   });
 
-  socket.on("pause", (key) => {
-    if (!checkKey(socket.data.roomId, key)) return;
+  socket.on("pause", () => {
+    if (!checkKey(socket)) return;
     socket.to(socket.data.roomId).emit("pause");
   });
 });

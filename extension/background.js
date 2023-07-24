@@ -4,6 +4,15 @@ if (typeof browser === "undefined") {
   var browser = chrome;
 }
 
+function randomString(length) {
+  const characters = "abcdefghijklmnopqrstuvwxyz";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
+
 function log(...args) {
   console.log("[YouTube Watch Together]", ...args);
 }
@@ -15,38 +24,38 @@ function sendToTabs(message) {
 }
 
 browser.runtime.onMessage.addListener((message) => {
-  if (message.event === "joinRoom") {
-    connect(message.roomId);
-  }
+  if (message.event === "joinRoom") connect(message.roomId);
 });
 
 let lastVideoId = "";
-let lastKey;
+let lastKey = "";
+let isHost = false;
 
-(async () => {
-  lastKey = (await browser.storage.local.get("key")).key;
-})();
+browser.storage.local.get("key").then((data) => {
+  if (!data.key || data.lastUsed < Date.now() - 1000 * 60 * 5) {
+    const key = randomString(16);
+    browser.storage.local.set({ key });
+    lastKey = key;
+    return;
+  }
+
+  lastKey = data.key;
+
+  setInterval(() => browser.storage.local.set({ lastUsed: Date.now() }), 5000);
+});
 
 browser.runtime.onMessage.addListener((message) => {
   if (!ws) return;
   if (lastVideoId === message.videoId) return;
-  log("Received message from extension:", message);
 
-  switch (message.event) {
-    case "initKey":
-      if (lastKey === message.key) return;
-      lastKey = message.key;
-    case "navigate":
-      if (lastVideoId === message.videoId) return;
-      lastVideoId = message.videoId;
-      ws.emit("load", message.videoId, lastKey);
-    case "play":
-      ws.emit("play", message.time, lastKey);
-      break;
-    case "pause":
-      ws.emit("pause", lastKey);
-      break;
+  if (message.event === "navigate") {
+    if (lastVideoId === message.videoId) return;
+    lastVideoId = message.videoId;
+    ws.emit("load", message.videoId, Math.round(Date.now()) + 5 * 1000);
+    if (isHost) setTimeout(() => sendToTabs({ event: "play", time: 0 }), 5000);
   }
+  if (message.event === "play") ws.emit("play", message.time);
+  if (message.event === "pause") ws.emit("pause");
 });
 
 const DEV_URL = "ws://localhost:12372";
@@ -60,6 +69,9 @@ function connect(roomId) {
   ws = io(URL, {
     forceNew: true,
     transports: ["websocket"],
+    auth: {
+      key: lastKey,
+    },
   });
 
   ws.on("error", console.error);
@@ -67,22 +79,23 @@ function connect(roomId) {
     log("Connected to server");
     ws.emit("join", roomId);
   });
-  ws.on("host", (key) => {
-    log("Received host key:", key);
-    lastKey = key;
+  ws.on("reconnect", () => {
+    log("Reconnected to server");
   });
-  ws.on("load", (videoId) => {
+  ws.on("host", () => {
+    log("I am the host :D");
+    isHost = true;
+  });
+  ws.on("load", (videoId, startAt) => {
     log("Loading video", videoId);
     sendToTabs({ event: "changeVideo", videoId });
+    setTimeout(
+      () => sendToTabs({ event: "play", time: 0 }),
+      startAt - Math.round(Date.now())
+    );
   });
-  ws.on("play", (time) => {
-    log("Received play event and sync at", time);
-    sendToTabs({ event: "play", time });
-  });
-  ws.on("pause", () => {
-    log("Received pause event");
-    sendToTabs({ event: "pause" });
-  });
+  ws.on("play", (time) => sendToTabs({ event: "play", time }));
+  ws.on("pause", () => sendToTabs({ event: "pause" }));
 }
 
 log("Loaded background script");
