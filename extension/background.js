@@ -82,7 +82,10 @@ function connect(roomId) {
   ws.on("reconnect", () => {
     log("Reconnected to server");
   });
-  ws.on("host", () => (isHost = true));
+  ws.on("host", () => {
+    log("I am the host :D");
+    isHost = true;
+  });
   ws.on("load", (videoId, startAt) => {
     log("Loading video", videoId);
     sendToTabs({ event: "changeVideo", videoId });
@@ -91,12 +94,8 @@ function connect(roomId) {
       startAt - Math.round(Date.now())
     );
   });
-  ws.on("play", (time) => {
-    sendToTabs({ event: "play", time });
-  });
-  ws.on("pause", () => {
-    sendToTabs({ event: "pause" });
-  });
+  ws.on("play", (time) => sendToTabs({ event: "play", time }));
+  ws.on("pause", () => sendToTabs({ event: "pause" }));
 }
 
 log("Loaded background script");
