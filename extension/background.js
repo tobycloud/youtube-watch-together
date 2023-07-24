@@ -53,7 +53,12 @@ browser.runtime.onMessage.addListener((message) => {
     case "navigate":
       if (lastVideoId === message.videoId) return;
       lastVideoId = message.videoId;
-      ws.emit("load", message.videoId, lastKey);
+      ws.emit(
+        "load",
+        message.videoId,
+        Math.round(Date.now() / 1000) + 5,
+        lastKey
+      );
     case "play":
       ws.emit("play", message.time, lastKey);
       break;
@@ -85,9 +90,13 @@ function connect(roomId) {
     log("Received host key:", key);
     lastKey = key;
   });
-  ws.on("load", (videoId) => {
+  ws.on("load", (videoId, startAt) => {
     log("Loading video", videoId);
     sendToTabs({ event: "changeVideo", videoId });
+    setTimeout(
+      () => sendToTabs({ event: "play", time: 0 }),
+      (startAt - Math.round(Date.now() / 1000)) * 1000
+    );
   });
   ws.on("play", (time) => {
     log("Received play event and sync at", time);

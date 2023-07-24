@@ -35,6 +35,8 @@ function checkUrl() {
 
     log("Found player");
 
+    player.pause();
+
     player.addEventListener("play", () =>
       browser.runtime.sendMessage({ event: "play", time: player.currentTime })
     );

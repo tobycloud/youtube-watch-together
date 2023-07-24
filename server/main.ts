@@ -42,9 +42,9 @@ wss.on("connection", (socket) => {
     socket.join(roomId);
   });
 
-  socket.on("load", (videoId, key) => {
+  socket.on("load", (videoId, startAt, key) => {
     if (!checkKey(socket.data.roomId, key)) return;
-    socket.to(socket.data.roomId).emit("load", videoId);
+    socket.to(socket.data.roomId).emit("load", videoId, startAt);
   });
 
   socket.on("play", (currentTimestamp, key) => {
