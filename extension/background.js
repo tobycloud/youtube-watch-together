@@ -36,6 +36,7 @@ browser.runtime.onMessage.addListener((message) => {
 
 let lastVideoId = "";
 let lastKey;
+let amIHost = false;
 
 (async () => {
   lastKey = (await browser.storage.local.get("key")).key;
@@ -50,6 +51,7 @@ browser.runtime.onMessage.addListener((message) => {
     case "initKey":
       if (lastKey === message.key) return;
       lastKey = message.key;
+      break;
     case "navigate":
       if (lastVideoId === message.videoId) return;
       lastVideoId = message.videoId;
@@ -59,6 +61,9 @@ browser.runtime.onMessage.addListener((message) => {
         Math.round(Date.now()) + 5 * 1000,
         lastKey
       );
+      if (amIHost)
+        setTimeout(() => sendToTabs({ event: "play", time: 0 }), 5000);
+      break;
     case "play":
       ws.emit("play", message.time, lastKey);
       break;
@@ -88,6 +93,7 @@ function connect(roomId) {
   });
   ws.on("host", (key) => {
     log("Received host key:", key);
+    amIHost = true;
     lastKey = key;
   });
   ws.on("load", (videoId, startAt) => {
