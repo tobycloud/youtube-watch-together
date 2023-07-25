@@ -1,18 +1,14 @@
 function joinRoom() {
   let roomId = document.getElementById("roomId").value;
-  chrome.tabs.query(
-    { active: true, currentWindow: true, url: "https://www.youtube.com/*" },
-    (tabs) => {
-      const youtubeTab = tabs[0].id;
-      if (youtubeTab) {
-        chrome.tabs.sendMessage(youtubeTab, { event: "notification", roomId });
-        chrome.runtime.sendMessage({
-          event: "joinRoom",
-          roomId,
-        });
-      }
-    }
+  chrome.tabs.query({ url: "*://*.youtube.com/*" }, (tabs) =>
+    tabs.forEach((tab) => {
+      chrome.tabs.sendMessage(tab.id, { event: "notification", roomId });
+    })
   );
+  chrome.runtime.sendMessage({
+    event: "joinRoom",
+    roomId,
+  });
   window.close();
 }
 
