@@ -28,28 +28,23 @@ browser.runtime.onMessage.addListener((message) => {
 });
 
 let lastVideoId = "";
-let lastKey = "";
+let key = "";
 let isHost = false;
 
-browser.storage.local.get("key").then((data) => {
-  if (!data.key || data.lastUsed < Date.now() - 1000 * 60 * 5) {
-    const key = randomString(16);
-    browser.storage.local.set({ key });
-    lastKey = key;
-    return;
-  }
-
-  lastKey = data.key;
-
-  setInterval(() => browser.storage.local.set({ lastUsed: Date.now() }), 5000);
+browser.storage.local.get(["key", "lastUsed"]).then((data) => {
+  data.lastUsed = parseInt(data.lastUsed || 0);
+  if (data.lastUsed < Date.now() - 1000 * 60 * 5) data.key = randomString(32);
+  key = data.key;
+  browser.storage.local.set({ key });
 });
+
+setInterval(() => browser.storage.local.set({ lastUsed: Date.now() }), 5000);
 
 browser.runtime.onMessage.addListener((message) => {
   if (!ws) return;
   if (lastVideoId === message.videoId) return;
 
   if (message.event === "navigate") {
-    if (lastVideoId === message.videoId) return;
     lastVideoId = message.videoId;
     ws.emit("load", message.videoId, Math.round(Date.now()) + 5 * 1000);
     if (isHost) setTimeout(() => sendToTabs({ event: "play", time: 0 }), 5000);
@@ -60,28 +55,27 @@ browser.runtime.onMessage.addListener((message) => {
 
 const DEV_URL = "ws://localhost:12372";
 const PROD_URL = "wss://ytwt.tobycm.systems";
-const DEBUG = false;
+const DEBUG = true;
 const URL = DEBUG ? DEV_URL : PROD_URL;
 
 let ws;
 
 function connect(roomId) {
+  browser.storage.local.set({ roomId });
+
   ws = io(URL, {
     forceNew: true,
     transports: ["websocket"],
     auth: {
-      key: lastKey,
+      key: key,
+    },
+    query: {
+      roomId,
     },
   });
 
   ws.on("error", console.error);
-  ws.on("connect", () => {
-    log("Connected to server");
-    ws.emit("join", roomId);
-  });
-  ws.on("reconnect", () => {
-    log("Reconnected to server");
-  });
+  ws.on("connect", () => log("Connected to server"));
   ws.on("host", () => {
     log("I am the host :D");
     isHost = true;
