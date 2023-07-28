@@ -81,6 +81,7 @@ function connect(roomId) {
     isHost = true;
   });
   ws.on("load", (videoId, startAt) => {
+    if (lastVideoId === videoId) return;
     log("Loading video", videoId);
     sendToTabs({ event: "changeVideo", videoId });
     setTimeout(
