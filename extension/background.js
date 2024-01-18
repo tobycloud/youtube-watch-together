@@ -54,7 +54,7 @@ browser.runtime.onMessage.addListener((message) => {
 });
 
 const DEV_URL = "ws://localhost:12372";
-const PROD_URL = "wss://ytwt.tobycm.systems";
+const PROD_URL = "wss://ytwt.tobycm.dev";
 const DEBUG = false;
 const URL = DEBUG ? DEV_URL : PROD_URL;
 
