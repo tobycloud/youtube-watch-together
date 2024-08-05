@@ -18,9 +18,7 @@ function log(...args) {
 }
 
 function sendToTabs(message) {
-  browser.tabs.query({ url: "*://*.youtube.com/*" }, (tabs) =>
-    tabs.forEach((tab) => browser.tabs.sendMessage(tab.id, message))
-  );
+  browser.tabs.query({ url: "*://*.youtube.com/*" }, (tabs) => tabs.forEach((tab) => browser.tabs.sendMessage(tab.id, message)));
 }
 
 browser.runtime.onMessage.addListener((message) => {
@@ -51,6 +49,7 @@ browser.runtime.onMessage.addListener((message) => {
   }
   if (message.event === "play") ws.emit("play", message.time);
   if (message.event === "pause") ws.emit("pause");
+  if (message.event === "seek") ws.emit("seek", message.time);
 });
 
 const DEV_URL = "ws://localhost:12372";
@@ -66,12 +65,8 @@ function connect(roomId) {
   ws = io(URL, {
     forceNew: true,
     transports: ["websocket"],
-    auth: {
-      key: key,
-    },
-    query: {
-      roomId,
-    },
+    auth: { key },
+    query: { roomId },
   });
 
   ws.on("error", console.error);
@@ -84,13 +79,11 @@ function connect(roomId) {
     if (lastVideoId === videoId) return;
     log("Loading video", videoId);
     sendToTabs({ event: "changeVideo", videoId });
-    setTimeout(
-      () => sendToTabs({ event: "play", time: 0 }),
-      startAt - Math.round(Date.now())
-    );
+    setTimeout(() => sendToTabs({ event: "play", time: 0 }), startAt - Math.round(Date.now()));
   });
   ws.on("play", (time) => sendToTabs({ event: "play", time }));
   ws.on("pause", () => sendToTabs({ event: "pause" }));
+  ws.on("seek", (time) => sendToTabs({ event: "seek", time }));
 }
 
 log("Loaded background script");

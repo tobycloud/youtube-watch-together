@@ -40,13 +40,22 @@ browser.runtime.onMessage.addListener((message) => {
 });
 
 browser.runtime.onMessage.addListener((message) => {
-  if (message.event === "changeVideo")
-    window.location.href = `https://www.youtube.com/watch?v=${message.videoId}`;
+  if (message.event === "changeVideo") window.location.href = `https://www.youtube.com/watch?v=${message.videoId}`;
 });
 
 log("Loaded extension");
 
 let player;
+
+/**
+ * @type {number}
+ */
+let lastTimestamp = 0;
+
+/**
+ * @type {boolean}
+ */
+let paused = false;
 
 function checkUrl() {
   if (!window.location.pathname.startsWith("/watch")) return;
@@ -57,22 +66,28 @@ function checkUrl() {
   browser.runtime.sendMessage({ event: "navigate", videoId });
 
   if (!player) {
-    player = document.getElementsByClassName(
-      "video-stream html5-main-video"
-    )[0];
+    player = document.getElementsByClassName("video-stream html5-main-video")[0];
     if (!player) return;
 
     log("Found player");
 
     player.pause();
 
-    player.addEventListener("play", () =>
-      browser.runtime.sendMessage({ event: "play", time: player.currentTime })
-    );
+    player.addEventListener("play", () => browser.runtime.sendMessage({ event: "play", time: player.currentTime }));
 
-    player.addEventListener("pause", () =>
-      browser.runtime.sendMessage({ event: "pause" })
-    );
+    player.addEventListener("pause", () => {
+      browser.runtime.sendMessage({ event: "pause" });
+    });
+
+    player.addEventListener("timeupdate", () => {
+      if (!paused) return;
+
+      if (player.currentTime == lastTimestamp) return;
+
+      browser.runtime.sendMessage({ event: "seek", time: player.currentTime });
+
+      player.currentTime = lastTimestamp;
+    });
   }
 }
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Watch Together",
-  "version": "0.2.13.0",
+  "version": "0.3.0.0",
   "description": "Toby's pathetic attempt at a YouTube Watch Together extension",
   "icons": {
     "16": "images/logo.png",
@@ -11,15 +11,9 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://*.youtube.com/*"
-      ],
-      "js": [
-        "main.js"
-      ],
-      "css": [
-        "main.css"
-      ]
+      "matches": ["https://*.youtube.com/*"],
+      "js": ["main.js"],
+      "css": ["main.css"]
     }
   ],
   "action": {
@@ -29,12 +23,6 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "permissions": [
-    "tabs",
-    "storage",
-    "offscreen"
-  ],
-  "host_permissions": [
-    "*://youtube.com/*"
-  ]
+  "permissions": ["tabs", "storage", "offscreen"],
+  "host_permissions": ["*://youtube.com/*"]
 }

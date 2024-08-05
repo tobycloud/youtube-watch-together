@@ -2,6 +2,9 @@ import express from "express";
 import { Server } from "socket.io";
 
 const app = express();
+
+app.route("/").get((_, res) => res.json({ status: "ok" }));
+
 const wss = new Server(
   app.listen(12372, () => console.log("Started server")),
   {
@@ -20,13 +23,7 @@ wss.on("connection", (socket) => {
   const key = socket.handshake.auth.key;
   const roomId = socket.handshake.query.roomId;
 
-  if (
-    key === undefined ||
-    roomId === undefined ||
-    Array.isArray(key) ||
-    Array.isArray(roomId)
-  )
-    return socket.disconnect();
+  if (key === undefined || roomId === undefined || Array.isArray(key) || Array.isArray(roomId)) return socket.disconnect();
 
   if (keys.get(roomId) === undefined) {
     keys.set(roomId, key);
@@ -47,6 +44,10 @@ wss.on("connection", (socket) => {
 
   socket.on("pause", (...data) => {
     if (checkKey(roomId, key)) socket.to(roomId).emit("pause", ...data);
+  });
+
+  socket.on("seek", (...data) => {
+    if (checkKey(roomId, key)) socket.to(roomId).emit("seek", ...data);
   });
 
   socket.on("disconnect", () => {
