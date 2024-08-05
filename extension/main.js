@@ -52,11 +52,6 @@ let player;
  */
 let lastTimestamp = 0;
 
-/**
- * @type {boolean}
- */
-let paused = false;
-
 function checkUrl() {
   if (!window.location.pathname.startsWith("/watch")) return;
 
@@ -77,16 +72,17 @@ function checkUrl() {
 
     player.addEventListener("pause", () => {
       browser.runtime.sendMessage({ event: "pause" });
+      lastTimestamp = player.currentTime;
     });
 
     player.addEventListener("timeupdate", () => {
-      if (!paused) return;
+      if (!player.paused) return;
 
       if (player.currentTime == lastTimestamp) return;
 
       browser.runtime.sendMessage({ event: "seek", time: player.currentTime });
 
-      player.currentTime = lastTimestamp;
+      lastTimestamp = player.currentTime;
     });
   }
 }
